@@ -1,3 +1,5 @@
+using Ferrio.EntityMap.Prototype.Api.Persistence;
+using Ferrio.EntityMap.Prototype.Api.Services;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 
@@ -22,6 +24,10 @@ try
     {
         services.AddControllers();
         services.AddEndpointsApiExplorer();
+
+        services.AddSingleton<IEntityMapStorage, EntityMapGraph>();
+        services.AddSingleton<IApplicationService, ApplicationService>();
+        services.AddSingleton<IEnvironmentService, EnvironmentService>();
         
         services.AddSwaggerGen(options =>
             {
@@ -45,7 +51,7 @@ try
 
     app.UseSwagger(c => c.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0);
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "V1"));
-
+    app.MapControllers();
     app.Run();
 }
 catch (Exception e)

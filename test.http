@@ -1,0 +1,25 @@
+http://localhost:5183/api/application/health
+
+### Create Application
+
+POST http://localhost:5183/api/application/apps
+Content-Type: application/json
+
+{
+  "name": "Test App",
+  "applicationType": "test",
+  "entityDefinitions": [
+    {
+      "name": "Customer",
+      "entityType": "customer"
+    }
+  ]
+}
+
+### Create Environment
+POST http://localhost:5183/api/application/apps/d350a259-d8c6-4ed9-a31c-85252bb4afa9/environments
+Content-Type: application/json
+
+{
+  "name": "Test Environment"
+}
