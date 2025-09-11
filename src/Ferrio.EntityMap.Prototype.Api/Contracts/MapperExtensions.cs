@@ -37,4 +37,15 @@ public static class MapperExtensions
             Name = createEnvironmentRequest.Name
         };
     }
+
+    public static Services.Models.CreateEntity ToModel(this CreateEntityRequest createEntityRequest)
+    {
+        return new Services.Models.CreateEntity
+        {
+            ReferenceId = createEntityRequest.ReferenceId,
+            ParentReferenceId = createEntityRequest.ParentReferenceId,
+            Name = createEntityRequest.Name,
+            EntityType = createEntityRequest.EntityType
+        };
+    }
 }

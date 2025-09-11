@@ -28,6 +28,7 @@ try
         services.AddSingleton<IEntityMapStorage, EntityMapGraph>();
         services.AddSingleton<IApplicationService, ApplicationService>();
         services.AddSingleton<IEnvironmentService, EnvironmentService>();
+        services.AddSingleton<IEntityService, EntityService>();
         
         services.AddSwaggerGen(options =>
             {

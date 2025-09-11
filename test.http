@@ -21,5 +21,26 @@ POST http://localhost:5183/api/application/apps/d350a259-d8c6-4ed9-a31c-85252bb4
 Content-Type: application/json
 
 {
-  "name": "Test Environment"
+  "name": "Test Environment 3"
+}
+
+### Create Customer Entity
+POST http://localhost:5183/api/entity/environments/35f72f93-8a54-48d8-8547-372a17641a5a/entities
+Content-Type: application/json
+
+{
+  "name": "My Customer",
+  "referenceId": "CUST_1",
+  "entityType": "customer"
+}
+
+### Create Job Child Entity
+POST http://localhost:5183/api/entity/environments/35f72f93-8a54-48d8-8547-372a17641a5a/entities
+Content-Type: application/json
+
+{
+  "name": "Job 1",
+  "referenceId": "J_1",
+  "entityType": "job",
+  "parentReferenceId": "CUST_1"
 }
