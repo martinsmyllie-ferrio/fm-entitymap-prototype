@@ -23,11 +23,24 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
     {
         if (request == null)
         {
-            return BadRequest("Invalid environment data.");
+            return BadRequest("Invalid request.");
         }
 
         var entity = await _entityService.CreateEntity(envId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntity), entity);
+    }
+
+    [HttpPost("entitymaps")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> MapExistingEntities([FromBody] CreateEntityMapRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid request.");
+        }
+
+        await _entityService.CreateEntityMap(request.ToModel());
+        return CreatedAtAction(nameof(MapExistingEntities), null);
     }
 }
 

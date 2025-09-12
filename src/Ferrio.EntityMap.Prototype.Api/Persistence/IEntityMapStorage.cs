@@ -11,4 +11,6 @@ public interface IEntityMapStorage
     Task CreateApplicationEnvironment(Guid appId, Services.Models.Environment environment);
 
     Task CreateEntity(Guid environmentId, Services.Models.Entity entity);
+
+    Task CreateEntityMap(CreateEntityMap createEntityMap);
 }

@@ -1,46 +1,107 @@
 http://localhost:5183/api/application/health
 
-### Create Application
+### Create SimPro Application
 
 POST http://localhost:5183/api/application/apps
 Content-Type: application/json
 
 {
-  "name": "Test App",
-  "applicationType": "test",
+  "name": "SIMPRO",
+  "applicationType": "SimPro",
   "entityDefinitions": [
     {
       "name": "Customer",
       "entityType": "customer"
+    },
+    {
+      "name": "Job",
+      "entityType": "job"
     }
   ]
 }
 
-### Create Environment
-POST http://localhost:5183/api/application/apps/d350a259-d8c6-4ed9-a31c-85252bb4afa9/environments
+### Create ServiceChannel Application
+
+POST http://localhost:5183/api/application/apps
 Content-Type: application/json
 
 {
-  "name": "Test Environment 3"
+  "name": "Service Channel",
+  "applicationType": "service channel",
+  "entityDefinitions": [
+    {
+      "name": "Customer",
+      "entityType": "customer"
+    },
+    {
+      "name": "Site",
+      "entityType": "site"
+    },
+    {
+      "name": "Job",
+      "entityType": "job"
+    }
+  ]
+}
+
+
+### Create Environment
+POST http://localhost:5183/api/application/apps/70db2852-7d86-40ed-a785-08f07858806c/environments
+Content-Type: application/json
+
+{
+  "name": "test.simprosuite.com"
 }
 
 ### Create Customer Entity
-POST http://localhost:5183/api/entity/environments/35f72f93-8a54-48d8-8547-372a17641a5a/entities
+POST http://localhost:5183/api/entity/environments/f9ee460c-b046-4ac0-93f2-9c0e47951cf2/entities
 Content-Type: application/json
 
 {
-  "name": "My Customer",
-  "referenceId": "CUST_1",
+  "name": "Aldi",
+  "referenceId": "aldi",
   "entityType": "customer"
 }
 
-### Create Job Child Entity
-POST http://localhost:5183/api/entity/environments/35f72f93-8a54-48d8-8547-372a17641a5a/entities
+### Create Site Entity
+POST http://localhost:5183/api/entity/environments/f9ee460c-b046-4ac0-93f2-9c0e47951cf2/entities
 Content-Type: application/json
 
 {
-  "name": "Job 1",
-  "referenceId": "J_1",
+  "name": "Archer Rd",
+  "referenceId": "archer_rd_store",
+  "entityType": "site",
+  "parentReferenceId": "aldi"
+}
+
+
+### Create Job Child Entity
+POST http://localhost:5183/api/entity/environments/a8dbcd45-1e6c-485b-943d-9adaeff57bf2/entities
+Content-Type: application/json
+
+{
+  "name": "Job 3",
+  "referenceId": "S_J3",
   "entityType": "job",
-  "parentReferenceId": "CUST_1"
+  "parentReferenceId": "aldi"
+}
+
+### Create Entity Mapping customer -> customer (service channel -> simpro)
+
+POST http://localhost:5183/api/entity/entitymaps
+Content-Type: application/json
+
+{
+  "source":
+  {
+    "environmentId": "f9ee460c-b046-4ac0-93f2-9c0e47951cf2",
+    "entityType": "customer",
+    "referenceId": "aldi"
+  },
+  "target":
+  {
+    "environmentId": "a8dbcd45-1e6c-485b-943d-9adaeff57bf2",
+    "entityType": "customer",
+    "referenceId": "aldi"
+  }
 }

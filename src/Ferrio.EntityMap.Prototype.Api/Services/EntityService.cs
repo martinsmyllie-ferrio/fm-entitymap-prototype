@@ -26,4 +26,11 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
 
         return ent;
     }
+
+    public Task CreateEntityMap(CreateEntityMap entityMap)
+    {
+        _logger.LogInformation("Creating entity map");
+
+        return _storage.CreateEntityMap(entityMap);
+    }
 }

@@ -48,4 +48,17 @@ public static class MapperExtensions
             EntityType = createEntityRequest.EntityType
         };
     }
+
+    public static Services.Models.CreateEntityMap ToModel(this CreateEntityMapRequest createEntityMapRequest)
+    {
+        return new Services.Models.CreateEntityMap
+        {
+            SourceEnvironmentId = createEntityMapRequest.Source.EnvironmentId,
+            SourceType = createEntityMapRequest.Source.EntityType,
+            SourceReferenceId = createEntityMapRequest.Source.ReferenceId,
+            TargetEnvironmentId = createEntityMapRequest.Target.EnvironmentId,
+            TargetType = createEntityMapRequest.Target.EntityType,
+            TargetReferenceId = createEntityMapRequest.Target.ReferenceId
+        };
+    }
 }
