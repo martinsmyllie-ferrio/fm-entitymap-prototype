@@ -24,4 +24,9 @@ public class EnvironmentService(IEntityMapStorage storage, ILogger<EnvironmentSe
 
         return env;
     }
+
+    public Task CreateEnvironmentCapabilityMap(Guid sourceEnvironmentId, Guid targetEnvironmentId, Dictionary<string, bool> capabilities)
+    {
+        return _storage.CreateEnvironmentCapabilityMap(sourceEnvironmentId, targetEnvironmentId, capabilities);
+    }
 }

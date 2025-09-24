@@ -42,5 +42,18 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
         await _entityService.CreateEntityMap(request.ToModel());
         return CreatedAtAction(nameof(MapExistingEntities), null);
     }
+
+    [HttpPost("entitymaps/pairs")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateEntityPair([FromBody] CreateMappedEntityPairRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid request.");
+        }
+
+        var entities = await _entityService.CreateEntityPair(request.ToModel());
+        return CreatedAtAction(nameof(CreateEntityPair), entities);
+    }
 }
 

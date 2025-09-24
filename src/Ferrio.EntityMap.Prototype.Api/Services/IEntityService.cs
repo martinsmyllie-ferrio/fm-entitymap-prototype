@@ -8,4 +8,6 @@ public interface IEntityService
     Task<Entity> CreateEntity(Guid environmentId, CreateEntity entity);
 
     Task CreateEntityMap(CreateEntityMap entityMap);
+
+    Task<MappedEntities> CreateEntityPair(CreateMappedEntities createMappedEntities);
 }

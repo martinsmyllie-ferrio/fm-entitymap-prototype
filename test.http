@@ -105,3 +105,40 @@ Content-Type: application/json
     "referenceId": "aldi"
   }
 }
+
+### Create environment capability mapping
+POST http://localhost:5183/api/application/environments/f9ee460c-b046-4ac0-93f2-9c0e47951cf2/capabilities
+Content-Type: application/json
+
+{
+  "targetEnvironmentId": "a8dbcd45-1e6c-485b-943d-9adaeff57bf2",
+  "publishCapabilities":
+  {
+    "customer": true,
+    "site": false,
+    "job": true
+  }
+}
+
+### Create Entities with Mapping job -> Job (service channel -> simpro)
+POST http://localhost:5183/api/entity/entitymaps/pairs
+Content-Type: application/json
+
+{
+  "sourceEnvironmentId": "f9ee460c-b046-4ac0-93f2-9c0e47951cf2",
+  "targetEnvironmentId": "a8dbcd45-1e6c-485b-943d-9adaeff57bf2",
+  "source":
+  {
+    "name": "Job 5",
+    "referenceId": "SC_JOB5",
+    "entityType": "job",
+    "parentReferenceId": "archer_rd_store"
+  },
+  "target":
+  {
+    "name": "Job 5",
+    "referenceId": "S_J5",
+    "entityType": "job",
+    "parentReferenceId": "aldi"
+  }
+}

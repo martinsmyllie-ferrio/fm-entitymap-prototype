@@ -139,7 +139,7 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
 
     public async Task CreateEntityMap(CreateEntityMap entityMap)
     {
-        await using var driver = GetDriver(); ;
+        await using var driver = GetDriver();
 
         var sourceEntityLabel = GetEntityLabel(await GetApplicationType(driver, entityMap.SourceEnvironmentId), entityMap.SourceType);
         var targetEntityLabel = GetEntityLabel(await GetApplicationType(driver, entityMap.TargetEnvironmentId), entityMap.TargetType);
@@ -152,6 +152,111 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
                                      tgtLabel = targetEntityLabel,
                                      srcRefId = entityMap.SourceReferenceId,
                                      tgtRefId = entityMap.TargetReferenceId,
+                                 })
+                                 .WithConfig(new QueryConfig(database: "neo4j"))
+                                 .ExecuteAsync();
+
+        var summary = result.Summary;
+
+        _logger.LogInformation("Created {RelationshipsCreated} relationships in {Milliseconds} ms.", summary.Counters.RelationshipsCreated, summary.ResultAvailableAfter.Milliseconds);
+    }
+
+    public async Task CreateEntityPairWithMap(MappedEntities mappedEntities)
+    {
+        await using var driver = GetDriver();
+
+        var sourceEntityLabel = GetEntityLabel(await GetApplicationType(driver, mappedEntities.SourceEnvironmentId), mappedEntities.SourceEntity.EntityType);
+        var targetEntityLabel = GetEntityLabel(await GetApplicationType(driver, mappedEntities.TargetEnvironmentId), mappedEntities.TargetEntity.EntityType);
+
+        if (!string.IsNullOrEmpty(mappedEntities.SourceEntity.ParentReferenceId) && !string.IsNullOrEmpty(mappedEntities.TargetEntity.ParentReferenceId))
+        {
+            var result = await driver.ExecutableQuery(@"
+                MATCH (srcEnv:Environment) WHERE srcEnv.id=$srcEnvId
+                MATCH (tgtEnv:Environment) WHERE tgtEnv.id=$tgtEnvId
+                MATCH (srcEnv)<-[:BELONGS_TO]-(srcParent) WHERE srcParent.refId = $srcParentRefId
+                MATCH (tgtEnv)<-[:BELONGS_TO]-(tgtParent) WHERE tgtParent.refId = $tgtParentRefId
+                CREATE (src:$($srcLabel) {id:$srcId, name:$srcName, refId:$srcRefId})-[:MAPS_TO]->(tgt:$($tgtLabel) {id:$tgtId, name:$tgtName, refId:$tgtRefId})
+                CREATE (src)-[:BELONGS_TO]->(srcEnv)
+                CREATE (tgt)-[:BELONGS_TO]->(tgtEnv)
+                CREATE (src)-[:PARENT]->(srcParent)
+                CREATE (tgt)-[:PARENT]->(tgtParent)")
+                                        .WithParameters(new
+                                        {
+                                            srcEnvId = mappedEntities.SourceEnvironmentId.ToString(),
+                                            tgtEnvId = mappedEntities.TargetEnvironmentId.ToString(),
+                                            srcParentRefId = mappedEntities.SourceEntity.ParentReferenceId,
+                                            tgtParentRefId = mappedEntities.TargetEntity.ParentReferenceId,
+                                            srcLabel = sourceEntityLabel,
+                                            tgtLabel = targetEntityLabel,
+                                            srcId = mappedEntities.SourceEntity.Id.ToString(),
+                                            tgtId = mappedEntities.TargetEntity.Id.ToString(),
+                                            srcName = mappedEntities.SourceEntity.Name,
+                                            tgtName = mappedEntities.TargetEntity.Name,
+                                            srcRefId = mappedEntities.SourceEntity.ReferenceId,
+                                            tgtRefId = mappedEntities.TargetEntity.ReferenceId,
+                                        })
+                                        .WithConfig(new QueryConfig(database: "neo4j"))
+                                        .ExecuteAsync();
+
+            var summary = result.Summary;
+
+            _logger.LogInformation("Created {NodesCreated} nodes and {RelationshipsCreated} relationships in {Milliseconds} ms.",
+                summary.Counters.NodesCreated,
+                summary.Counters.RelationshipsCreated,
+                summary.ResultAvailableAfter.Milliseconds);
+        }
+        else
+        {
+            var result = await driver.ExecutableQuery(@"
+                MATCH (srcEnv:Environment) WHERE srcEnv.Id=$srcEnvId
+                MATCH (tgtEnv:Environment) WHERE tgtEnv.Id=$tgtEnvId
+                CREATE (src:$($srcLabel) {id:$srcId, name:$srcName, refId:$srcRefId})-[:MAPS_TO]->(tgt:$($tgtLabel) {id:$tgtId, name:$tgtName, refId:$tgtRefId})
+                CREATE (src)-[:BELONGS_TO]->(srcEnv)
+                CREATE (tgt)-[:BELONGS_TO]->(tgtEnv)")
+                                        .WithParameters(new
+                                        {
+                                            srcEnvId = mappedEntities.SourceEnvironmentId.ToString(),
+                                            tgtEnvId = mappedEntities.TargetEnvironmentId.ToString(),
+                                            srcLabel = sourceEntityLabel,
+                                            tgtLabel = targetEntityLabel,
+                                            srcId = mappedEntities.SourceEntity.Id.ToString(),
+                                            tgtId = mappedEntities.TargetEntity.Id.ToString(),
+                                            srcName = mappedEntities.SourceEntity.Name,
+                                            tgtName = mappedEntities.TargetEntity.Name,
+                                            srcRefId = mappedEntities.SourceEntity.ReferenceId,
+                                            tgtRefId = mappedEntities.TargetEntity.ReferenceId,
+                                        })
+                                        .WithConfig(new QueryConfig(database: "neo4j"))
+                                        .ExecuteAsync();
+
+            var summary = result.Summary;
+
+            _logger.LogInformation("Created {NodesCreated} nodes and {RelationshipsCreated} relationships in {Milliseconds} ms.",
+                summary.Counters.NodesCreated,
+                summary.Counters.RelationshipsCreated,
+                summary.ResultAvailableAfter.Milliseconds);
+        }
+    }
+
+    public async Task CreateEnvironmentCapabilityMap(Guid sourceEnvironmentId, Guid targetEnvironmentId, Dictionary<string, bool> capabilities)
+    {
+        await using var driver = GetDriver();
+
+        var applicationType = await GetApplicationType(driver, sourceEnvironmentId);
+
+        var entityTypePublishingCapabilities = capabilities.ToDictionary(
+            kvp => GetEntityLabel(applicationType, kvp.Key),
+            kvp => kvp.Value);
+
+        var result = await driver.ExecutableQuery(@"
+            MATCH(src: Environment) WHERE src.id = $srcId MATCH(tgt: Environment) WHERE tgt.id = $tgtId
+            CREATE (src)-[:$($relationship) $capabilityProps]->(tgt)")
+                                 .WithParameters(new
+                                 {
+                                     srcId = sourceEnvironmentId.ToString(),
+                                     tgtId = targetEnvironmentId.ToString(),
+                                     relationship = $"{applicationType}_PUBLISH_CAPABILITY".ToUpperInvariant(),
+                                     capabilityProps = entityTypePublishingCapabilities,
                                  })
                                  .WithConfig(new QueryConfig(database: "neo4j"))
                                  .ExecuteAsync();

@@ -33,4 +33,35 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
 
         return _storage.CreateEntityMap(entityMap);
     }
+
+    public async Task<MappedEntities> CreateEntityPair(CreateMappedEntities createMappedEntities)
+    {
+        _logger.LogInformation("Creating entity pair with mapping");
+
+        var mappedEntities = new MappedEntities
+        {
+            SourceEnvironmentId = createMappedEntities.SourceEnvironmentId,
+            TargetEnvironmentId = createMappedEntities.TargetEnvironmentId,
+            SourceEntity = new()
+            {
+                Id = Guid.NewGuid(),
+                Name = createMappedEntities.SourceEntity.Name,
+                ReferenceId = createMappedEntities.SourceEntity.ReferenceId,
+                ParentReferenceId = createMappedEntities.SourceEntity.ParentReferenceId,
+                EntityType = createMappedEntities.SourceEntity.EntityType
+            },
+            TargetEntity = new()
+            {
+                Id = Guid.NewGuid(),
+                Name = createMappedEntities.TargetEntity.Name,
+                ReferenceId = createMappedEntities.TargetEntity.ReferenceId,
+                ParentReferenceId = createMappedEntities.TargetEntity.ParentReferenceId,
+                EntityType = createMappedEntities.TargetEntity.EntityType
+            }
+        };
+
+        await _storage.CreateEntityPairWithMap(mappedEntities);
+
+        return mappedEntities;
+    }
 }

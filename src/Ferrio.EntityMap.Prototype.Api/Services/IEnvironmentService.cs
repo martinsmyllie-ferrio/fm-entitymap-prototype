@@ -6,5 +6,5 @@ public interface IEnvironmentService
 {
     Task<Models.Environment> CreateEnvironment(Guid applicationId, CreateEnvironment environment);
 
-    // void CreateEnvironment(string applicationType, string name);
+    Task CreateEnvironmentCapabilityMap(Guid SourceEnvironmentId, Guid targetEnvironmentId, Dictionary<string, bool> capabilities);
 }

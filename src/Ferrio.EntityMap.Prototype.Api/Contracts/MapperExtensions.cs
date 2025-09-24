@@ -61,4 +61,27 @@ public static class MapperExtensions
             TargetReferenceId = createEntityMapRequest.Target.ReferenceId
         };
     }
+
+    public static Services.Models.CreateMappedEntities ToModel(this CreateMappedEntityPairRequest createMappedEntityPairRequest)
+    {
+        return new Services.Models.CreateMappedEntities
+        {
+            SourceEnvironmentId = createMappedEntityPairRequest.SourceEnvironmentId,
+            SourceEntity = new()
+            {
+                Name = createMappedEntityPairRequest.Source.Name,
+                ReferenceId = createMappedEntityPairRequest.Source.ReferenceId,
+                ParentReferenceId = createMappedEntityPairRequest.Source.ParentReferenceId,
+                EntityType = createMappedEntityPairRequest.Source.EntityType
+            },
+            TargetEnvironmentId = createMappedEntityPairRequest.TargetEnvironmentId,
+            TargetEntity = new()
+            {
+                Name = createMappedEntityPairRequest.Target.Name,
+                ReferenceId = createMappedEntityPairRequest.Target.ReferenceId,
+                ParentReferenceId = createMappedEntityPairRequest.Target.ParentReferenceId,
+                EntityType = createMappedEntityPairRequest.Target.EntityType
+            },
+        };
+    }
 }
