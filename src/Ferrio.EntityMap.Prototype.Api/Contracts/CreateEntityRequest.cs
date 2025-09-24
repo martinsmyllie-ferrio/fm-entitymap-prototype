@@ -4,9 +4,9 @@ namespace Ferrio.EntityMap.Prototype.Api.Contracts;
 
 public class CreateEntityRequest
 {
-    public required string ReferenceId { get; set; }
+    public required string Id { get; set; }
 
-    public string? ParentReferenceId { get; set; }
+    public string? ParentId { get; set; }
 
     public string? Name { get; set; }
 

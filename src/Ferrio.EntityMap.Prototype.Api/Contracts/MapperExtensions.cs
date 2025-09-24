@@ -10,7 +10,7 @@ public static class MapperExtensions
         {
             Name = createApplicationRequest.Name,
             ApplicationType = createApplicationRequest.ApplicationType,
-            EntityDefinitions = createApplicationRequest.EntityDefinitions?.ToModel() ?? Array.Empty<Services.Models.CreateEntityDefinition>()
+            EntityDefinitions = createApplicationRequest.EntityDefinitions?.ToModel() ?? []
         };
     }
 
@@ -38,12 +38,12 @@ public static class MapperExtensions
         };
     }
 
-    public static Services.Models.CreateEntity ToModel(this CreateEntityRequest createEntityRequest)
+    public static Services.Models.Entity ToModel(this CreateEntityRequest createEntityRequest)
     {
-        return new Services.Models.CreateEntity
+        return new Services.Models.Entity
         {
-            ReferenceId = createEntityRequest.ReferenceId,
-            ParentReferenceId = createEntityRequest.ParentReferenceId,
+            Id = createEntityRequest.Id,
+            ParentId = createEntityRequest.ParentId,
             Name = createEntityRequest.Name,
             EntityType = createEntityRequest.EntityType
         };
@@ -55,10 +55,10 @@ public static class MapperExtensions
         {
             SourceEnvironmentId = createEntityMapRequest.Source.EnvironmentId,
             SourceType = createEntityMapRequest.Source.EntityType,
-            SourceReferenceId = createEntityMapRequest.Source.ReferenceId,
+            SourceEntityId = createEntityMapRequest.Source.ReferenceId,
             TargetEnvironmentId = createEntityMapRequest.Target.EnvironmentId,
             TargetType = createEntityMapRequest.Target.EntityType,
-            TargetReferenceId = createEntityMapRequest.Target.ReferenceId
+            TargetEntityId = createEntityMapRequest.Target.ReferenceId
         };
     }
 
@@ -70,18 +70,36 @@ public static class MapperExtensions
             SourceEntity = new()
             {
                 Name = createMappedEntityPairRequest.Source.Name,
-                ReferenceId = createMappedEntityPairRequest.Source.ReferenceId,
-                ParentReferenceId = createMappedEntityPairRequest.Source.ParentReferenceId,
+                Id = createMappedEntityPairRequest.Source.Id,
+                ParentId = createMappedEntityPairRequest.Source.ParentId,
                 EntityType = createMappedEntityPairRequest.Source.EntityType
             },
             TargetEnvironmentId = createMappedEntityPairRequest.TargetEnvironmentId,
             TargetEntity = new()
             {
                 Name = createMappedEntityPairRequest.Target.Name,
-                ReferenceId = createMappedEntityPairRequest.Target.ReferenceId,
-                ParentReferenceId = createMappedEntityPairRequest.Target.ParentReferenceId,
+                Id = createMappedEntityPairRequest.Target.Id,
+                ParentId = createMappedEntityPairRequest.Target.ParentId,
                 EntityType = createMappedEntityPairRequest.Target.EntityType
             },
+        };
+    }
+
+    public static Services.Models.Tenant ToModel(this CreateTenantRequest createTenantRequest)
+    {
+        return new Services.Models.Tenant
+        {
+            TenantId = createTenantRequest.TenantId,
+            Name = createTenantRequest.Name
+        };
+    }
+
+    public static Services.Models.CreateDomain ToModel(this CreateDomainRequest createDomainRequest)
+    {
+        return new Services.Models.CreateDomain
+        {
+            Name = createDomainRequest.Name,
+            EntityDefinitions = createDomainRequest.EntityDefinitions?.ToModel() ?? []
         };
     }
 }

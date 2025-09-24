@@ -46,51 +46,116 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
 
     // }
 
-    public async Task CreateApplication(Application application)
+    public async Task CreateTenant(Tenant tenant)
     {
         await using var driver = GetDriver();
 
-        var result = await driver.ExecutableQuery(@"CREATE (a:Application {id: $id, name: $name, type: $type})")
-                                 .WithParameters(new { id = application.Id.ToString(), name = application.Name, type = application.ApplicationType })
+        var result = await driver.ExecutableQuery(@"CREATE (t:Tenant {id: $id, name: $name})")
+                                 .WithParameters(new { id = tenant.TenantId.ToString(), name = tenant.Name })
+                                 .WithConfig(new QueryConfig(database: "neo4j"))
+                                 .ExecuteAsync();
+
+        var summary = result.Summary;
+
+        _logger.LogInformation("Created {NodesCreated} nodes in {Milliseconds} ms.", summary.Counters.NodesCreated, summary.ResultAvailableAfter.Milliseconds);
+    }
+
+    public async Task CreateDomain(Guid tenantId, Domain domain)
+    {
+        await using var driver = GetDriver();
+
+        var result = await driver.ExecutableQuery(@"
+            MATCH (t:Tenant {id: $tenantId})
+            CREATE (d:Domain {id: $id, name: $name})-[r:BELONGS_TO_TENANT]->(t)")
+                                 .WithParameters(new
+                                 {
+                                     tenantId = tenantId.ToString(),
+                                     id = domain.DomainId.ToString(),
+                                     name = domain.Name
+                                 })
+                                 .WithConfig(new QueryConfig(database: "neo4j"))
+                                 .ExecuteAsync();
+
+        var summary = result.Summary;
+
+        _logger.LogInformation("Created {NodesCreated} nodes in {Milliseconds} ms.", summary.Counters.NodesCreated, summary.ResultAvailableAfter.Milliseconds);
+
+        if (domain.EntityDefinitions is not null)
+        {
+            foreach (var entityDefinition in domain.EntityDefinitions)
+            {
+                var entityDefResult = await driver.ExecutableQuery(@"
+                    MATCH (d:Domain {id: $domainId})
+                    CREATE (ed:EntityDefinition {id: $id, name: $name, entityType: $entityType, parentEntityType: $parentEntityType})-[r:DEFINED_BY]->(d)")
+                                     .WithParameters(new
+                                     {
+                                         domainId = domain.DomainId.ToString(),
+                                         id = entityDefinition.EntityDefinitionId.ToString(),
+                                         name = entityDefinition.Name,
+                                         entityType = entityDefinition.EntityType,
+                                         parentEntityType = entityDefinition.ParentEntityType
+                                     })
+                                     .WithConfig(new QueryConfig(database: "neo4j"))
+                                     .ExecuteAsync();
+
+                var entityDefSummary = entityDefResult.Summary;
+
+                _logger.LogInformation("Created {NodesCreated} nodes in {Milliseconds} ms.", entityDefSummary.Counters.NodesCreated, entityDefSummary.ResultAvailableAfter.Milliseconds);
+            }
+        }
+    }
+
+    public async Task CreateApplication(Guid tenantId, Guid domainId, Application application)
+    {
+        await using var driver = GetDriver();
+
+        var result = await driver.ExecutableQuery(@"
+            MATCH (t:Tenant {id: $tenantId})
+            MATCH (d:Domain {id: $domainId})
+            CREATE (a:Application {id: $id, name: $name, type: $type})-[:BELONGS_TO_TENANT]->(t)
+            CREATE (a)-[:BELONGS_TO_DOMAIN]->(d)")
+                                 .WithParameters(new
+                                 {
+                                     tenantId = tenantId.ToString(),
+                                     domainId = domainId.ToString(),
+                                     id = application.ApplicationId.ToString(),
+                                     name = application.Name,
+                                     type = application.ApplicationType
+                                 })
                                  .WithConfig(new QueryConfig(database: "neo4j"))
                                  .ExecuteAsync();
 
         var summary = result.Summary;
         _logger.LogInformation("Created {NodesCreated} nodes in {Milliseconds} ms.", summary.Counters.NodesCreated, summary.ResultAvailableAfter.Milliseconds);
-
-        foreach (var entityDefinition in application.EntityDefinitions ?? [])
-        {
-            await CreateEntityConstraint(driver, GetEntityLabel(application.ApplicationType, entityDefinition.EntityType));
-        }
     }
 
-    private async Task CreateEntityConstraint(IDriver driver, string entityLabel)
+    private async Task CreateEntityPrimaryKeyConstraint(IDriver driver, string entityLabel)
     {
-        var result1 = await driver.ExecutableQuery(
-            @"CREATE CONSTRAINT $constraintName FOR (n:" + entityLabel + ") REQUIRE n.refId IS NODE UNIQUE")
-                             .WithParameters(new { constraintName = $"ux_{entityLabel}" })
-                             .WithConfig(new QueryConfig(database: "neo4j"))
-                             .ExecuteAsync();
-
-        _logger.LogInformation("Created {ConstraintsAdded} constraints in {Milliseconds} ms.", result1.Summary.Counters.ConstraintsAdded, result1.Summary.ResultAvailableAfter.Milliseconds);
-
-        var result2 = await driver.ExecutableQuery(@"CREATE CONSTRAINT $constraintName FOR (n:" + entityLabel + ") REQUIRE n.id IS NODE KEY")
+        var result = await driver.ExecutableQuery(@"CREATE CONSTRAINT $constraintName FOR (n:" + entityLabel + ") REQUIRE n.id IS NODE KEY")
                              .WithParameters(new { constraintName = $"pk_{entityLabel}" })
                              .WithConfig(new QueryConfig(database: "neo4j"))
                              .ExecuteAsync();
 
-        _logger.LogInformation("Created {ConstraintsAdded} nodes in {Milliseconds} ms.", result2.Summary.Counters.ConstraintsAdded, result2.Summary.ResultAvailableAfter.Milliseconds);
+        _logger.LogInformation("Created {ConstraintsAdded} nodes in {Milliseconds} ms.", result.Summary.Counters.ConstraintsAdded, result.Summary.ResultAvailableAfter.Milliseconds);
     }
 
-    public async Task CreateApplicationEnvironment(Guid applicationId, Services.Models.Environment environment)
+    public async Task CreateApplicationEnvironment(Guid tenantId, Guid applicationId, Services.Models.Environment environment)
     {
         await using var driver = GetDriver();
 
         var result = await driver.ExecutableQuery(@"
-            MATCH (a:Application {id: $appId})
-            CREATE (e:Environment {id: $envId, name: $name})-[:BELONGS_TO]->(a)
+            MATCH (t:Tenant {id: $tenantId})
+            MATCH (a:Application {id: $appId})-[:BELONGS_TO_DOMAIN]->(d:Domain)
+            CREATE (e:Environment {id: $envId, name: $name})-[:INSTANCE_OF]->(a)
+            CREATE (e)-[:BELONGS_TO_TENANT]->(t)
             RETURN a.type")
-                                 .WithParameters(new { appId = applicationId.ToString(), envId = environment.Id.ToString(), name = environment.Name })
+                                 .WithParameters(new
+                                 {
+                                     tenantId = tenantId.ToString(),
+                                     appId = applicationId.ToString(),
+                                     envId = environment.Id.ToString(),
+                                     name = environment.Name
+                                 })
                                  .WithConfig(new QueryConfig(database: "neo4j"))
                                  .ExecuteAsync();
 
@@ -101,32 +166,68 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         _logger.LogInformation("Created {NodesCreated} nodes in {Milliseconds} ms.", summary.Counters.NodesCreated, summary.ResultAvailableAfter.Milliseconds);
 
         _environmentApplicationTypes[environment.Id] = appType;
+
+
+        // sort entity types
+        var result2 = await driver.ExecutableQuery(@"
+            MATCH (a:Application {id: $appId})-[:BELONGS_TO_DOMAIN]->(d:Domain)
+            MATCH (d)<-[:DEFINED_BY]-(ed:EntityDefinition)
+            RETURN a.type, ed.entityType")
+                                 .WithParameters(new
+                                 {
+                                     appId = applicationId.ToString()
+                                 })
+                                 .WithConfig(new QueryConfig(database: "neo4j"))
+                                 .ExecuteAsync();
+
+        var entityTypes = result2.Result.Select(r => (string)r["ed.entityType"]).ToHashSet();
+
+        foreach (var entityType in entityTypes ?? [])
+        {
+            var envEntityTypeLabel = GetEnvironmentEntityTypeLabel(environment.Id, entityType);
+
+            await CreateEntityPrimaryKeyConstraint(driver, envEntityTypeLabel);
+        }
     }
 
-    public async Task CreateEntity(Guid environmentId, Entity entity)
+    public async Task CreateEntity(Guid tenantId, Guid environmentId, Entity entity)
     {
         await using var driver = GetDriver();
         var applicationType = await GetApplicationType(driver, environmentId);
 
-        var entityLabel = GetEntityLabel(applicationType, entity.EntityType);
+        var (appEntityTypeLabel, envEntityTypeLabel) = GetNodeLabels(applicationType, environmentId, entity.EntityType);
 
-        var result = string.IsNullOrEmpty(entity.ParentReferenceId)
+        var result = string.IsNullOrEmpty(entity.ParentId)
             ? await driver.ExecutableQuery(@"
+                MATCH (t:Tenant {id: $tenantId})
                 MATCH (env:Environment {id: $envId})
-                CREATE (e:$($entityLabel) {id: $entityId, refId: $refId, name: $name})-[:BELONGS_TO]->(env)")
-                                     .WithParameters(new { envId = environmentId.ToString(), entityId = entity.Id.ToString(), entityLabel = entityLabel, refId = entity.ReferenceId, name = entity.Name })
+                CREATE (e:$($envEntityType):$($appEntityType):$($entityType) {id: $entityId, name: $name})-[:BELONGS_TO]->(env)
+                CREATE (e)-[:BELONGS_TO_TENANT]->(t)")
+                                     .WithParameters(new
+                                     {
+                                         tenantId = tenantId.ToString(),
+                                         envId = environmentId.ToString(),
+                                         entityId = entity.Id.ToString(),
+                                         envEntityType = envEntityTypeLabel,
+                                         appEntityType = appEntityTypeLabel,
+                                         entityType = entity.EntityType.ToPascalCase(),
+                                         name = entity.Name
+                                     })
                                      .WithConfig(new QueryConfig(database: "neo4j"))
                                      .ExecuteAsync()
             : await driver.ExecutableQuery(@"
-                MATCH (env:Environment)<-[:BELONGS_TO]-(parent) WHERE env.id = $envId AND parent.refId = $parentRefId
-                CREATE (e:$($entityLabel) {id: $entityId, refId: $refId, name: $name}), (e)-[:BELONGS_TO]->(env), (e)-[:PARENT]->(parent)")
+                MATCH (t:Tenant {id: $tenantId})
+                MATCH (env:Environment)<-[:BELONGS_TO]-(parent) WHERE env.id = $envId AND parent.id = $parentId
+                CREATE (e:$($envEntityType):$($appEntityType):$($entityType) {id: $entityId, name: $name}), (e)-[:BELONGS_TO]->(env), (e)-[:PARENT]->(parent), (e)-[:BELONGS_TO_TENANT]->(t)")
                                  .WithParameters(new
                                  {
-                                     parentRefId = entity.ParentReferenceId,
+                                     tenantId = tenantId.ToString(),
+                                     parentId = entity.ParentId,
                                      envId = environmentId.ToString(),
                                      entityId = entity.Id.ToString(),
-                                     entityLabel = entityLabel,
-                                     refId = entity.ReferenceId,
+                                     envEntityType = envEntityTypeLabel,
+                                     appEntityType = appEntityTypeLabel,
+                                     entityType = entity.EntityType.ToPascalCase(),
                                      name = entity.Name
                                  })
                                  .WithConfig(new QueryConfig(database: "neo4j"))
@@ -141,17 +242,17 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
     {
         await using var driver = GetDriver();
 
-        var sourceEntityLabel = GetEntityLabel(await GetApplicationType(driver, entityMap.SourceEnvironmentId), entityMap.SourceType);
-        var targetEntityLabel = GetEntityLabel(await GetApplicationType(driver, entityMap.TargetEnvironmentId), entityMap.TargetType);
+        var sourceEnvironmentEntityTypeLabel = GetEnvironmentEntityTypeLabel(entityMap.SourceEnvironmentId, entityMap.SourceType);
+        var targetEnvironmentEntityTypeLabel = GetEnvironmentEntityTypeLabel(entityMap.TargetEnvironmentId, entityMap.TargetType);
 
         var result = await driver.ExecutableQuery(@"
-            MATCH (j:$($srcLabel)) WHERE j.refId=$srcRefId MATCH (k:$($tgtLabel)) WHERE k.refId=$tgtRefId CREATE (j)-[r:MAPS_TO]->(k)")
+            MATCH (j:$($srcEnvEntityType)) WHERE j.id=$srcId MATCH (k:$($tgtEnvEntityType)) WHERE k.id=$tgtId CREATE (j)-[r:MAPS_TO]->(k)")
                                  .WithParameters(new
                                  {
-                                     srcLabel = sourceEntityLabel,
-                                     tgtLabel = targetEntityLabel,
-                                     srcRefId = entityMap.SourceReferenceId,
-                                     tgtRefId = entityMap.TargetReferenceId,
+                                     srcEnvEntityType = sourceEnvironmentEntityTypeLabel,
+                                     tgtEnvEntityType = targetEnvironmentEntityTypeLabel,
+                                     srcId = entityMap.SourceEntityId,
+                                     tgtId = entityMap.TargetEntityId,
                                  })
                                  .WithConfig(new QueryConfig(database: "neo4j"))
                                  .ExecuteAsync();
@@ -165,17 +266,17 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
     {
         await using var driver = GetDriver();
 
-        var sourceEntityLabel = GetEntityLabel(await GetApplicationType(driver, mappedEntities.SourceEnvironmentId), mappedEntities.SourceEntity.EntityType);
-        var targetEntityLabel = GetEntityLabel(await GetApplicationType(driver, mappedEntities.TargetEnvironmentId), mappedEntities.TargetEntity.EntityType);
+        var (srcAppEntityTypeLabel, srcEnvEntityTypeLabel) = GetNodeLabels(await GetApplicationType(driver, mappedEntities.SourceEnvironmentId), mappedEntities.SourceEnvironmentId, mappedEntities.SourceEntity.EntityType);
+        var (tgtAppEntityTypeLabel, tgtEnvEntityTypeLabel) = GetNodeLabels(await GetApplicationType(driver, mappedEntities.TargetEnvironmentId), mappedEntities.TargetEnvironmentId, mappedEntities.TargetEntity.EntityType);
 
-        if (!string.IsNullOrEmpty(mappedEntities.SourceEntity.ParentReferenceId) && !string.IsNullOrEmpty(mappedEntities.TargetEntity.ParentReferenceId))
+        if (!string.IsNullOrEmpty(mappedEntities.SourceEntity.ParentId) && !string.IsNullOrEmpty(mappedEntities.TargetEntity.ParentId))
         {
             var result = await driver.ExecutableQuery(@"
                 MATCH (srcEnv:Environment) WHERE srcEnv.id=$srcEnvId
                 MATCH (tgtEnv:Environment) WHERE tgtEnv.id=$tgtEnvId
                 MATCH (srcEnv)<-[:BELONGS_TO]-(srcParent) WHERE srcParent.refId = $srcParentRefId
                 MATCH (tgtEnv)<-[:BELONGS_TO]-(tgtParent) WHERE tgtParent.refId = $tgtParentRefId
-                CREATE (src:$($srcLabel) {id:$srcId, name:$srcName, refId:$srcRefId})-[:MAPS_TO]->(tgt:$($tgtLabel) {id:$tgtId, name:$tgtName, refId:$tgtRefId})
+                CREATE (src:$($srcEnvEntityType):$($srcAppEntityType):$(srcEntityType) {id:$srcId, name:$srcName})-[:MAPS_TO]->(tgt:$($tgtEnvEntityType):$($tgtAppEntityType):$(tgtEntityType) {id:$tgtId, name:$tgtName})
                 CREATE (src)-[:BELONGS_TO]->(srcEnv)
                 CREATE (tgt)-[:BELONGS_TO]->(tgtEnv)
                 CREATE (src)-[:PARENT]->(srcParent)
@@ -184,16 +285,18 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
                                         {
                                             srcEnvId = mappedEntities.SourceEnvironmentId.ToString(),
                                             tgtEnvId = mappedEntities.TargetEnvironmentId.ToString(),
-                                            srcParentRefId = mappedEntities.SourceEntity.ParentReferenceId,
-                                            tgtParentRefId = mappedEntities.TargetEntity.ParentReferenceId,
-                                            srcLabel = sourceEntityLabel,
-                                            tgtLabel = targetEntityLabel,
-                                            srcId = mappedEntities.SourceEntity.Id.ToString(),
-                                            tgtId = mappedEntities.TargetEntity.Id.ToString(),
+                                            srcParentRefId = mappedEntities.SourceEntity.ParentId,
+                                            tgtParentRefId = mappedEntities.TargetEntity.ParentId,
+                                            srcEnvEntityType = srcEnvEntityTypeLabel,
+                                            srcAppEntityType = srcAppEntityTypeLabel,
+                                            srcEntityType = mappedEntities.SourceEntity.EntityType.ToPascalCase(),
+                                            tgtEnvEntityType = tgtEnvEntityTypeLabel,
+                                            tgtAppEntityType = tgtAppEntityTypeLabel,
+                                            tgtEntityType = mappedEntities.TargetEntity.EntityType.ToPascalCase(),
+                                            srcId = mappedEntities.SourceEntity.Id,
+                                            tgtId = mappedEntities.TargetEntity.Id,
                                             srcName = mappedEntities.SourceEntity.Name,
                                             tgtName = mappedEntities.TargetEntity.Name,
-                                            srcRefId = mappedEntities.SourceEntity.ReferenceId,
-                                            tgtRefId = mappedEntities.TargetEntity.ReferenceId,
                                         })
                                         .WithConfig(new QueryConfig(database: "neo4j"))
                                         .ExecuteAsync();
@@ -210,21 +313,23 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
             var result = await driver.ExecutableQuery(@"
                 MATCH (srcEnv:Environment) WHERE srcEnv.Id=$srcEnvId
                 MATCH (tgtEnv:Environment) WHERE tgtEnv.Id=$tgtEnvId
-                CREATE (src:$($srcLabel) {id:$srcId, name:$srcName, refId:$srcRefId})-[:MAPS_TO]->(tgt:$($tgtLabel) {id:$tgtId, name:$tgtName, refId:$tgtRefId})
+                CREATE (src:$($srcEnvEntityType):$($srcAppEntityType):$(srcEntityType) {id:$srcId, name:$srcName})-[:MAPS_TO]->(tgt:$($tgtEnvEntityType):$($tgtAppEntityType):$(tgtEntityType) {id:$tgtId, name:$tgtName})
                 CREATE (src)-[:BELONGS_TO]->(srcEnv)
                 CREATE (tgt)-[:BELONGS_TO]->(tgtEnv)")
                                         .WithParameters(new
                                         {
                                             srcEnvId = mappedEntities.SourceEnvironmentId.ToString(),
                                             tgtEnvId = mappedEntities.TargetEnvironmentId.ToString(),
-                                            srcLabel = sourceEntityLabel,
-                                            tgtLabel = targetEntityLabel,
+                                            srcEnvEntityType = srcEnvEntityTypeLabel,
+                                            srcAppEntityType = srcAppEntityTypeLabel,
+                                            srcEntityType = mappedEntities.SourceEntity.EntityType.ToPascalCase(),
+                                            tgtEnvEntityType = tgtEnvEntityTypeLabel,
+                                            tgtAppEntityType = tgtAppEntityTypeLabel,
+                                            tgtEntityType = mappedEntities.TargetEntity.EntityType.ToPascalCase(),
                                             srcId = mappedEntities.SourceEntity.Id.ToString(),
                                             tgtId = mappedEntities.TargetEntity.Id.ToString(),
                                             srcName = mappedEntities.SourceEntity.Name,
                                             tgtName = mappedEntities.TargetEntity.Name,
-                                            srcRefId = mappedEntities.SourceEntity.ReferenceId,
-                                            tgtRefId = mappedEntities.TargetEntity.ReferenceId,
                                         })
                                         .WithConfig(new QueryConfig(database: "neo4j"))
                                         .ExecuteAsync();
@@ -245,7 +350,7 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         var applicationType = await GetApplicationType(driver, sourceEnvironmentId);
 
         var entityTypePublishingCapabilities = capabilities.ToDictionary(
-            kvp => GetEntityLabel(applicationType, kvp.Key),
+            kvp => GetApplicationEntityTypeLabel(applicationType, kvp.Key),
             kvp => kvp.Value);
 
         var result = await driver.ExecutableQuery(@"
@@ -274,7 +379,7 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         }
 
         var result = await driver.ExecutableQuery(@"
-                MATCH (e:Environment)-[r:BELONGS_TO]->(a:Application) WHERE e.id=$envId
+                MATCH (e:Environment)-[r:INSTANCE_OF]->(a:Application) WHERE e.id=$envId
                 Return a.type")
                                 .WithParameters(new { envId = environmentId.ToString() })
                                 .WithConfig(new QueryConfig(database: "neo4j"))
@@ -292,8 +397,35 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         return GraphDatabase.Driver(dbUri, AuthTokens.Basic(dbUser, dbPassword));
     }
 
-    private static string GetEntityLabel(string applicationType, string entityType)
+    private static string GetApplicationEntityTypeLabel(string applicationType, string entityType)
     {
-        return $"{applicationType}_{entityType}".Replace(" ", "").ToLowerInvariant();
+        return $"{applicationType.ToPascalCase()}{entityType.ToPascalCase()}".Replace(" ", "").Replace("_", "").Replace("-", "");
+    }
+
+    private static string GetEnvironmentEntityTypeLabel(Guid environmentId, string entityType)
+    {
+        return $"{entityType.ToPascalCase()}{environmentId:N}".Replace(" ", "").Replace("_", "").Replace("-", "");
+    }
+
+    private static Tuple<string, string> GetNodeLabels(string applicationType, Guid environmentId, string entityType)
+    {
+        var appEntityTypeLabel = GetApplicationEntityTypeLabel(applicationType, entityType);
+        var envEntityTypeLabel = GetEnvironmentEntityTypeLabel(environmentId, entityType);
+
+        return new Tuple<string, string>(appEntityTypeLabel, envEntityTypeLabel);
+    }
+}
+
+public static class StringExtensions
+{
+    public static string ToPascalCase(this string str)
+    {
+        if (string.IsNullOrEmpty(str))
+            return str;
+
+        if (str.Length == 1)
+            return char.ToUpperInvariant(str[0]).ToString();
+
+        return char.ToUpperInvariant(str[0]) + str[1..];
     }
 }

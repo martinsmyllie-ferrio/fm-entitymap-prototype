@@ -17,16 +17,16 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
         return Ok(new { status = "Healthy" });
     }
 
-    [HttpPost("environments/{envId}/entities")]
+    [HttpPost("environments/{environmentId:guid}/entities")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateEntity(Guid envId, [FromBody] CreateEntityRequest request)
+    public async Task<IActionResult> CreateEntity([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, [FromBody] CreateEntityRequest request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        var entity = await _entityService.CreateEntity(envId, request.ToModel());
+        var entity = await _entityService.CreateEntity(tenantId, environmentId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntity), entity);
     }
 

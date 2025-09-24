@@ -1,6 +1,5 @@
 using Ferrio.EntityMap.Prototype.Api.Contracts;
 using Ferrio.EntityMap.Prototype.Api.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ferrio.EntityMap.Prototype.Api.Controllers;
@@ -19,33 +18,59 @@ public class ApplicationController(IApplicationService applicationService, IEnvi
         return Ok(new { status = "Healthy" });
     }
 
-    [HttpPost("apps")]
+    [HttpPost("tenants")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationRequest request)
+    public async Task<IActionResult> CreateTenant([FromBody] CreateTenantRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid tenant data.");
+        }
+
+        var tenant = await _applicationService.CreateTenant(request.ToModel());
+        return CreatedAtAction(nameof(CreateTenant), tenant);
+    }
+
+    [HttpPost("domains")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateDomain([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, [FromBody] CreateDomainRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid domain data.");
+        }
+
+        var domain = await _applicationService.CreateDomain(tenantId, request.ToModel());
+        return CreatedAtAction(nameof(CreateDomain), domain);
+    }
+
+    [HttpPost("domains/{domainId:guid}/apps")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateApplication([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid domainId, [FromBody] CreateApplicationRequest request)
     {
         if (request == null)
         {
             return BadRequest("Invalid application data.");
         }
 
-        var application = await _applicationService.CreateApplication(request.ToModel());
+        var application = await _applicationService.CreateApplication(tenantId, domainId, request.ToModel());
         return CreatedAtAction(nameof(CreateApplication), application);
     }
 
-    [HttpPost("apps/{appId}/environments")]
+    [HttpPost("apps/{appId:guid}/environments")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateApplicationEnvironment(Guid appId, [FromBody] CreateEnvironmentRequest request)
+    public async Task<IActionResult> CreateApplicationEnvironment([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid appId, [FromBody] CreateEnvironmentRequest request)
     {
         if (request == null)
         {
             return BadRequest("Invalid environment data.");
         }
 
-        var environment = await _environmentService.CreateEnvironment(appId, request.ToModel());
+        var environment = await _environmentService.CreateEnvironment(tenantId, appId, request.ToModel());
         return CreatedAtAction(nameof(CreateApplicationEnvironment), environment);
     }
 
-    [HttpPost("environments/{envId}/capabilities")]
+    [HttpPost("environments/{envId:guid}/capabilities")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<IActionResult> MapEnvironmentCapabilities(Guid envId, [FromBody] EnvironmentPublishingCapabilities request)
     {

@@ -10,7 +10,7 @@ public class EnvironmentService(IEntityMapStorage storage, ILogger<EnvironmentSe
     private readonly IEntityMapStorage _storage = storage;
     private readonly ILogger<EnvironmentService> _logger = logger;
 
-    public async Task<Models.Environment> CreateEnvironment(Guid applicationId, CreateEnvironment environment)
+    public async Task<Models.Environment> CreateEnvironment(Guid tenantId, Guid applicationId, CreateEnvironment environment)
     {
         _logger.LogInformation("Creating environment {EnvironmentName} for application {ApplicationId}", environment.Name, applicationId);
 
@@ -20,7 +20,7 @@ public class EnvironmentService(IEntityMapStorage storage, ILogger<EnvironmentSe
             Name = environment.Name
         };
 
-        await _storage.CreateApplicationEnvironment(applicationId, env);
+        await _storage.CreateApplicationEnvironment(tenantId, applicationId, env);
 
         return env;
     }

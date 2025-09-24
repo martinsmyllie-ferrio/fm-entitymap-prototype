@@ -6,13 +6,17 @@ public interface IEntityMapStorage
 {
     Task TestConnectionAsync();
 
-    Task CreateApplication(Application application);
+    Task CreateTenant(Tenant tenant);
 
-    Task CreateApplicationEnvironment(Guid appId, Services.Models.Environment environment);
+    Task CreateDomain(Guid tenantId, Domain domain);
+
+    Task CreateApplication(Guid tenantId, Guid domainId, Application application);
+
+    Task CreateApplicationEnvironment(Guid tenantId, Guid applicationId, Services.Models.Environment environment);
 
     Task CreateEnvironmentCapabilityMap(Guid sourceEnvironmentId, Guid targetEnvironmentId, Dictionary<string, bool> capabilities);
 
-    Task CreateEntity(Guid environmentId, Services.Models.Entity entity);
+    Task CreateEntity(Guid tenantId, Guid environmentId, Services.Models.Entity entity);
 
     Task CreateEntityMap(CreateEntityMap createEntityMap);
 

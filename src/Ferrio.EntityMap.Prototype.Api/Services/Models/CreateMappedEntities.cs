@@ -8,9 +8,9 @@ public class CreateMappedEntities
 
     public Guid TargetEnvironmentId { get; set; }
     
-    public required CreateEntity SourceEntity { get; set; }
+    public required Entity SourceEntity { get; set; }
 
-    public required CreateEntity TargetEntity { get; set; }
+    public required Entity TargetEntity { get; set; }
 }
 
 

@@ -1,0 +1,96 @@
+### Create Tenant
+POST http://localhost:5183/api/Application/tenants
+Content-Type: application/json
+
+{
+    "tenantId": "7efa991b-3429-4340-9244-e63fb8362e7a",
+    "name": "Global Tenant"
+}
+
+### Create Domain
+POST http://localhost:5183/api/Application/domains
+Content-Type: application/json
+X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
+
+{
+    "name": "Ferrio FM",
+    "entityDefinitions": [
+    {
+      "name": "Customer Definition",
+      "entityType": "customer"
+    },
+    {
+      "name": "Site Definition",
+      "entityType": "site",
+      "parentEntityType": "customer"
+    },
+    {
+      "name": "Job Definition",
+      "entityType": "job",
+      "parentEntityType": "site"
+    }
+  ]
+}
+
+### Create Application in Domain
+POST http://localhost:5183/api/application/domains/cf1feebb-5f7d-44d4-a07d-255dc1d955bc/apps
+Content-Type: application/json
+X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
+
+{
+    "name": "SIMPRO JOB SCHEDULING",
+    "applicationType": "simpro"
+}
+
+### Create ACME Customer Tenant
+POST http://localhost:5183/api/Application/tenants
+Content-Type: application/json
+
+{
+    "tenantId": "c41d3cc6-8369-4c62-8d7e-ee44670f8ed4",
+    "name": "ACME Tenant"
+}
+
+### Create ACME Environment for Simpro
+POST http://localhost:5183/api/application/apps/c4d030fd-9673-4760-86ae-77c95cd34bcc/environments
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "name": "acme.simprosuite.com"
+}
+
+### Create ACME Simpro Customer entity
+POST http://localhost:5183/api/entity/environments/504c440d-4caa-4097-a255-fb8ae6da4412/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "customer",
+  "name": "Aldi",
+  "id": "SIM-CUST-001"
+}
+
+### Create ACME Simpro Site entity
+POST http://localhost:5183/api/entity/environments/504c440d-4caa-4097-a255-fb8ae6da4412/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "site",
+  "name": "Archer Road Store",
+  "id": "SIM-SITE-001",
+  "parentId": "SIM-CUST-001"
+}
+
+### Create ACME Simpro Job entity
+POST http://localhost:5183/api/entity/environments/504c440d-4caa-4097-a255-fb8ae6da4412/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "job",
+  "name": "Job 2",
+  "id": "SIM-JOB-002",
+  "parentId": "SIM-SITE-001"
+}
