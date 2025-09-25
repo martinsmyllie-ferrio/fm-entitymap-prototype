@@ -15,5 +15,5 @@ public class EntityReference
 
     public required string EntityType { get; set; }
 
-    public required string ReferenceId { get; set; }
+    public required string Id { get; set; }
 }

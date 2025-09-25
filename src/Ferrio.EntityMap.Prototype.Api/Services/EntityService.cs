@@ -18,14 +18,14 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
         return entity;
     }
 
-    public Task CreateEntityMap(CreateEntityMap entityMap)
+    public Task CreateEntityMap(Guid tenantId, CreateEntityMap entityMap)
     {
         _logger.LogInformation("Creating entity map");
 
-        return _storage.CreateEntityMap(entityMap);
+        return _storage.CreateEntityMap(tenantId, entityMap);
     }
 
-    public async Task<MappedEntities> CreateEntityPair(CreateMappedEntities createMappedEntities)
+    public async Task<MappedEntities> CreateEntityPair(Guid tenantId, CreateMappedEntities createMappedEntities)
     {
         _logger.LogInformation("Creating entity pair with mapping");
 
@@ -37,20 +37,27 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
             {
                 Name = createMappedEntities.SourceEntity.Name,
                 Id = createMappedEntities.SourceEntity.Id,
-                ParentId = createMappedEntities.SourceEntity.ParentId,
+                Parent = createMappedEntities.SourceEntity.Parent,
                 EntityType = createMappedEntities.SourceEntity.EntityType
             },
             TargetEntity = new()
             {
                 Name = createMappedEntities.TargetEntity.Name,
                 Id = createMappedEntities.TargetEntity.Id,
-                ParentId = createMappedEntities.TargetEntity.ParentId,
+                Parent = createMappedEntities.TargetEntity.Parent,
                 EntityType = createMappedEntities.TargetEntity.EntityType
             }
         };
 
-        await _storage.CreateEntityPairWithMap(mappedEntities);
+        await _storage.CreateEntityPairWithMap(tenantId, mappedEntities);
 
         return mappedEntities;
+    }
+
+    public Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityId, Dictionary<string, string> settings)
+    {
+        _logger.LogInformation("Creating entity settings for entity {EntityId} in environment {EnvironmentId}", entityId, environmentId);
+
+        return _storage.CreateEntitySettings(tenantId, environmentId, entityId, settings);
     }
 }

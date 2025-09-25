@@ -42,6 +42,17 @@ X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
     "applicationType": "simpro"
 }
 
+### Create Another Application in Domain
+POST http://localhost:5183/api/application/domains/cf1feebb-5f7d-44d4-a07d-255dc1d955bc/apps
+Content-Type: application/json
+X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
+
+{
+    "name": "BIG CHANGE",
+    "applicationType": "BigChange"
+}
+
+
 ### Create ACME Customer Tenant
 POST http://localhost:5183/api/Application/tenants
 Content-Type: application/json
@@ -60,6 +71,15 @@ X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
   "name": "acme.simprosuite.com"
 }
 
+### Create ACME Environment for BigChange
+POST http://localhost:5183/api/application/apps/1e1d92e5-b2ba-4dd9-bf67-f5891e3410df/environments
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "name": "acme.bigchange.com"
+}
+
 ### Create ACME Simpro Customer entity
 POST http://localhost:5183/api/entity/environments/504c440d-4caa-4097-a255-fb8ae6da4412/entities
 Content-Type: application/json
@@ -69,6 +89,17 @@ X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
   "entityType": "customer",
   "name": "Aldi",
   "id": "SIM-CUST-001"
+}
+
+### Create ACME BigChange Customer entity
+POST http://localhost:5183/api/entity/environments/70085f9b-e888-4895-9b28-f3b9eac18c14/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "customer",
+  "name": "ALDI",
+  "id": "BC-1"
 }
 
 ### Create ACME Simpro Site entity
@@ -83,6 +114,32 @@ X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
   "parentId": "SIM-CUST-001"
 }
 
+### Create ACME BigChange Site entity
+POST http://localhost:5183/api/entity/environments/70085f9b-e888-4895-9b28-f3b9eac18c14/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "site",
+  "name": "Archer Rd",
+  "id": "BC-1",
+  "parentId": "BC-1"
+}
+
+### Create ACME BigChange Site entity
+POST http://localhost:5183/api/entity/environments/70085f9b-e888-4895-9b28-f3b9eac18c14/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "site",
+  "name": "St. Mary's Gate",
+  "id": "BC-2",
+  "parentId": "BC-1",
+  "parentEntityType": "customer"
+}
+
+
 ### Create ACME Simpro Job entity
 POST http://localhost:5183/api/entity/environments/504c440d-4caa-4097-a255-fb8ae6da4412/entities
 Content-Type: application/json
@@ -90,7 +147,81 @@ X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
 
 {
   "entityType": "job",
-  "name": "Job 2",
-  "id": "SIM-JOB-002",
+  "name": "Job 1",
+  "id": "SIM-JOB-001",
   "parentId": "SIM-SITE-001"
+}
+
+### Create ACME BigChange Job entity
+POST http://localhost:5183/api/entity/environments/70085f9b-e888-4895-9b28-f3b9eac18c14/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "job",
+  "name": "Job 3",
+  "id": "BC-3",
+  "parentId": "BC-1",
+  "parentEntityType": "site"
+}
+
+### Create Mapping between ACME Simpro Customer and ACME BigChange Customer
+POST http://localhost:5183/api/entity/mappings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "source": {
+    "environmentId": "504c440d-4caa-4097-a255-fb8ae6da4412",
+    "id": "SIM-CUST-001",
+    "entityType": "customer"
+  },
+  "target": {
+    "environmentId": "70085f9b-e888-4895-9b28-f3b9eac18c14",
+    "id": "BC-1",
+    "entityType": "customer"
+  }
+}
+
+### Create Mapping between ACME Simpro Site and ACME BigChange Site
+POST http://localhost:5183/api/entity/mappings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "source": {
+    "environmentId": "504c440d-4caa-4097-a255-fb8ae6da4412",
+    "id": "SIM-SITE-001",
+    "entityType": "site"
+  },
+  "target": {
+    "environmentId": "70085f9b-e888-4895-9b28-f3b9eac18c14",
+    "id": "BC-1",
+    "entityType": "site"
+  }
+}
+
+### Create Mapping between new ACME Simpro Job and new ACME BigChange Job
+POST http://localhost:5183/api/entity/mappings/pairs
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "sourceEnvironmentId": "504c440d-4caa-4097-a255-fb8ae6da4412",
+  "targetEnvironmentId": "70085f9b-e888-4895-9b28-f3b9eac18c14",
+  "source": {
+    "id": "SIM-JOB-004",
+    "name": "Job 4",
+    "entityType": "job",
+    "parentId": "SIM-SITE-001",
+    "parentEntityType": "site"
+  },
+  "target": {
+    
+    "id": "BC-4",
+    "name": "Job 4",
+    "entityType": "job",
+    "parentId": "BC-1",
+    "parentEntityType": "site"
+  }
 }

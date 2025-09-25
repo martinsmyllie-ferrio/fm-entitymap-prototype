@@ -18,7 +18,9 @@ public interface IEntityMapStorage
 
     Task CreateEntity(Guid tenantId, Guid environmentId, Services.Models.Entity entity);
 
-    Task CreateEntityMap(CreateEntityMap createEntityMap);
+    Task CreateEntityMap(Guid tenantId, CreateEntityMap createEntityMap);
 
-    Task CreateEntityPairWithMap(MappedEntities mappedEntities);
+    Task CreateEntityPairWithMap(Guid tenantId, MappedEntities mappedEntities);
+
+    Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityId, Dictionary<string, string> settings);
 }

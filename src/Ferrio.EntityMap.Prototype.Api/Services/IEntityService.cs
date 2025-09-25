@@ -7,7 +7,9 @@ public interface IEntityService
 {
     Task<Entity> CreateEntity(Guid tenantId, Guid environmentId, Entity entity);
 
-    Task CreateEntityMap(CreateEntityMap entityMap);
+    Task CreateEntityMap(Guid tenantId, CreateEntityMap entityMap);
 
-    Task<MappedEntities> CreateEntityPair(CreateMappedEntities createMappedEntities);
+    Task<MappedEntities> CreateEntityPair(Guid tenantId, CreateMappedEntities createMappedEntities);
+
+    Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityId, Dictionary<string, string> settings);
 }

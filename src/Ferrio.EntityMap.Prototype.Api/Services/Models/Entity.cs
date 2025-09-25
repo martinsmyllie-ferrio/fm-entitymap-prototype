@@ -6,7 +6,7 @@ public class Entity
 {
     public required string Id { get; set; }
 
-    public string? ParentId { get; set; }
+    public Entity? Parent { get; set; }
 
     public string? Name { get; set; }
 

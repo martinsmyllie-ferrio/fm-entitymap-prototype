@@ -8,6 +8,8 @@ public class CreateEntityRequest
 
     public string? ParentId { get; set; }
 
+    public string? ParentEntityType { get; set; }
+
     public string? Name { get; set; }
 
     public required string EntityType { get; set; }

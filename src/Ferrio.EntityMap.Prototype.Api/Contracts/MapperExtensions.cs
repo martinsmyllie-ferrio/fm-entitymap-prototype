@@ -43,7 +43,11 @@ public static class MapperExtensions
         return new Services.Models.Entity
         {
             Id = createEntityRequest.Id,
-            ParentId = createEntityRequest.ParentId,
+            Parent = createEntityRequest.ParentId != null && createEntityRequest.ParentEntityType != null ? new Services.Models.Entity
+            {
+                Id = createEntityRequest.ParentId,
+                EntityType = createEntityRequest.ParentEntityType
+            } : null,
             Name = createEntityRequest.Name,
             EntityType = createEntityRequest.EntityType
         };
@@ -55,10 +59,10 @@ public static class MapperExtensions
         {
             SourceEnvironmentId = createEntityMapRequest.Source.EnvironmentId,
             SourceType = createEntityMapRequest.Source.EntityType,
-            SourceEntityId = createEntityMapRequest.Source.ReferenceId,
+            SourceEntityId = createEntityMapRequest.Source.Id,
             TargetEnvironmentId = createEntityMapRequest.Target.EnvironmentId,
             TargetType = createEntityMapRequest.Target.EntityType,
-            TargetEntityId = createEntityMapRequest.Target.ReferenceId
+            TargetEntityId = createEntityMapRequest.Target.Id
         };
     }
 
@@ -71,7 +75,13 @@ public static class MapperExtensions
             {
                 Name = createMappedEntityPairRequest.Source.Name,
                 Id = createMappedEntityPairRequest.Source.Id,
-                ParentId = createMappedEntityPairRequest.Source.ParentId,
+                Parent = createMappedEntityPairRequest.Source.ParentId != null && createMappedEntityPairRequest.Source.ParentEntityType != null
+                ? new Services.Models.Entity
+                {
+                    Id = createMappedEntityPairRequest.Source.ParentId,
+                    EntityType = createMappedEntityPairRequest.Source.ParentEntityType
+                }
+                : null,
                 EntityType = createMappedEntityPairRequest.Source.EntityType
             },
             TargetEnvironmentId = createMappedEntityPairRequest.TargetEnvironmentId,
@@ -79,7 +89,13 @@ public static class MapperExtensions
             {
                 Name = createMappedEntityPairRequest.Target.Name,
                 Id = createMappedEntityPairRequest.Target.Id,
-                ParentId = createMappedEntityPairRequest.Target.ParentId,
+                Parent = createMappedEntityPairRequest.Target.ParentId != null && createMappedEntityPairRequest.Target.ParentEntityType != null
+                ? new Services.Models.Entity
+                {
+                    Id = createMappedEntityPairRequest.Target.ParentId,
+                    EntityType = createMappedEntityPairRequest.Target.ParentEntityType
+                }
+                : null,
                 EntityType = createMappedEntityPairRequest.Target.EntityType
             },
         };
@@ -101,5 +117,10 @@ public static class MapperExtensions
             Name = createDomainRequest.Name,
             EntityDefinitions = createDomainRequest.EntityDefinitions?.ToModel() ?? []
         };
+    }
+
+    public static Dictionary<string, string> ToModel(this CreateSettingsRequest[] requests)
+    {
+        return requests.ToDictionary(r => r.SettingName, r => r.SettingValue);
     }
 }

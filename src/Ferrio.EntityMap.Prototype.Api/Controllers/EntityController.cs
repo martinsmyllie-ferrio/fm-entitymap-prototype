@@ -30,29 +30,42 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
         return CreatedAtAction(nameof(CreateEntity), entity);
     }
 
-    [HttpPost("entitymaps")]
+    [HttpPost("environments/{environmentId:guid}/entities/{entityId}/settings")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> MapExistingEntities([FromBody] CreateEntityMapRequest request)
+    public async Task<IActionResult> CreateEntitySettings([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityId, [FromBody] CreateSettingsRequest[] request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        await _entityService.CreateEntityMap(request.ToModel());
+        await _entityService.CreateEntitySettings(tenantId, environmentId, entityId, request.ToModel());
+        return CreatedAtAction(nameof(CreateEntitySettings), null);
+    }
+
+    [HttpPost("mappings")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> MapExistingEntities([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, [FromBody] CreateEntityMapRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid request.");
+        }
+
+        await _entityService.CreateEntityMap(tenantId, request.ToModel());
         return CreatedAtAction(nameof(MapExistingEntities), null);
     }
 
-    [HttpPost("entitymaps/pairs")]
+    [HttpPost("mappings/pairs")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateEntityPair([FromBody] CreateMappedEntityPairRequest request)
+    public async Task<IActionResult> CreateEntityPair([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, [FromBody] CreateMappedEntityPairRequest request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        var entities = await _entityService.CreateEntityPair(request.ToModel());
+        var entities = await _entityService.CreateEntityPair(tenantId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntityPair), entities);
     }
 }
