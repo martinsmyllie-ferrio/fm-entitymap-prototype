@@ -1,8 +1,8 @@
 # TODO
 
-1. Mapping between entities
+1. ~~Mapping between entities~~
 2. Capabilities between environments
-3. Enforcement of entity hierarchy
+3. ~~Enforcement of entity hierarchy~~
 4. Entity queries
 
 What jobs are mapped to a particular job?

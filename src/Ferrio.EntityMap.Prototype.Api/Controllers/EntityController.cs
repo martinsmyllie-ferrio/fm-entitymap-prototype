@@ -80,5 +80,13 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
 
         return Ok(setting);
     }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/mappings")]
+    public async Task<IActionResult> GetMappedEntities([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        var entities = await _entityService.GetMappedEntities(tenantId, environmentId, entityType, entityId);
+
+        return Ok(entities);
+    }
 }
 

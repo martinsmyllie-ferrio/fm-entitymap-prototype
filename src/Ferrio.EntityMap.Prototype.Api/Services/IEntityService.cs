@@ -14,4 +14,6 @@ public interface IEntityService
     Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityType, string entityId, Dictionary<string, string> settings);
 
     Task<string> GetEntitySetting(Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName);
+
+    Task<Entity[]> GetMappedEntities(Guid tenantId, Guid environmentId, string entityType, string entityId);
 }

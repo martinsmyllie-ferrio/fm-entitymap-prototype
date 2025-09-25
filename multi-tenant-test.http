@@ -288,3 +288,7 @@ X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
   "id": "BC-1",
   "parentId": "BC-1"
 }
+
+### Get Mapped Entities for ACME Simpro Job
+GET http://localhost:5183/api/entity/environments/deb99aef-c228-41b5-a58e-3cb8935972a6/entities/job/SIM-JOB-004/mappings
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4   

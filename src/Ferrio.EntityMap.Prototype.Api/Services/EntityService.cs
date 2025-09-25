@@ -67,4 +67,11 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
 
         return _storage.GetEntitySetting(tenantId, environmentId, entityType, entityId, settingName);
     }
+
+    public Task<Entity[]> GetMappedEntities(Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        _logger.LogInformation("Retrieving mapped entities for entity {EntityId} of type {EntityType} in environment {EnvironmentId}", entityId, entityType, environmentId);
+
+        return _storage.GetMappedEntities(tenantId, environmentId, entityType, entityId);
+    }
 }

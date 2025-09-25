@@ -501,6 +501,41 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         return settingValue;
     }
 
+    public async Task<Entity[]> GetMappedEntities(Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        await using var driver = GetDriver();
+
+        var result = await driver.ExecutableQuery(@"
+            MATCH (t:Tenant {id: $tenantId})
+            MATCH (env:Environment {id: $envId})-[:BELONGS_TO_TENANT]->(t)
+            MATCH (e WHERE e.id=$entityId)-[r:BELONGS_TO_ENVIRONMENT]->(env)
+            MATCH (e:$($entityType))-[:MAPS_TO]->(m)-[:BELONGS_TO_TENANT]->(t)
+            RETURN m.id AS id, m.name AS name")
+                                .WithParameters(new
+                                {
+                                    tenantId = tenantId.ToString(),
+                                    envId = environmentId.ToString(),
+                                    entityId = entityId,
+                                    entityType = entityType.ToPascalCase()
+                                })
+                                .WithConfig(new QueryConfig(database: "neo4j"))
+                                .ExecuteAsync();
+
+        var mappedEntities = new List<Entity>();
+
+        foreach (var record in result.Result)
+        {
+            mappedEntities.Add(new Entity
+            {
+                Id = (string)record["id"],
+                Name = (string)record["name"],
+                EntityType = entityType
+            });
+        }
+        
+        return [.. mappedEntities];
+    }
+
     private async Task<string> GetApplicationType(IDriver driver, Guid environmentId)
     {
         if (_environmentApplicationTypes.TryGetValue(environmentId, out var applicationType))
