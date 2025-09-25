@@ -1,7 +1,5 @@
-using System;
 using Ferrio.EntityMap.Prototype.Api.Persistence;
 using Ferrio.EntityMap.Prototype.Api.Services.Models;
-using Neo4j.Driver;
 
 namespace Ferrio.EntityMap.Prototype.Api.Services;
 
@@ -28,5 +26,10 @@ public class EnvironmentService(IEntityMapStorage storage, ILogger<EnvironmentSe
     public Task CreateEnvironmentCapabilityMap(Guid sourceEnvironmentId, Guid targetEnvironmentId, Dictionary<string, bool> capabilities)
     {
         return _storage.CreateEnvironmentCapabilityMap(sourceEnvironmentId, targetEnvironmentId, capabilities);
+    }
+
+    public Task CreateEnvironmentSettings(Guid tenantId, Guid environmentId, Dictionary<string, string> settings)
+    {
+        return _storage.CreateEnvironmentSettings(tenantId, environmentId, settings);
     }
 }

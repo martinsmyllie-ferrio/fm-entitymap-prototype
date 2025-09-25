@@ -54,10 +54,17 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
         return mappedEntities;
     }
 
-    public Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityId, Dictionary<string, string> settings)
+    public Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityType, string entityId, Dictionary<string, string> settings)
     {
-        _logger.LogInformation("Creating entity settings for entity {EntityId} in environment {EnvironmentId}", entityId, environmentId);
+        _logger.LogInformation("Creating entity settings for entity {EntityId} of type {EntityType} in environment {EnvironmentId}", entityId, entityType, environmentId);
 
-        return _storage.CreateEntitySettings(tenantId, environmentId, entityId, settings);
+        return _storage.CreateEntitySettings(tenantId, environmentId, entityType, entityId, settings);
+    }
+
+    public Task<string> GetEntitySetting(Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName)
+    {
+        _logger.LogInformation("Retrieving entity setting {SettingName} for entity {EntityId} of type {EntityType} in environment {EnvironmentId}", settingName, entityId, entityType, environmentId);
+
+        return _storage.GetEntitySetting(tenantId, environmentId, entityType, entityId, settingName);
     }
 }

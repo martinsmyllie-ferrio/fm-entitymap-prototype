@@ -146,7 +146,7 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         var result = await driver.ExecutableQuery(@"
             MATCH (t:Tenant {id: $tenantId})
             MATCH (a:Application {id: $appId})-[:BELONGS_TO_DOMAIN]->(d:Domain)
-            CREATE (e:Environment {id: $envId, name: $name})-[:INSTANCE_OF]->(a)
+            CREATE (e:Environment {id: $envId, name: $name})-[:INSTANCE_OF_APPLICATION]->(a)
             CREATE (e)-[:BELONGS_TO_TENANT]->(t)
             RETURN a.type")
                                  .WithParameters(new
@@ -201,7 +201,8 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
             ? await driver.ExecutableQuery(@"
                 MATCH (t:Tenant {id: $tenantId})
                 MATCH (env:Environment {id: $envId})
-                CREATE (e:$($envEntityType):$($appEntityType):$($entityType) {id: $entityId, name: $name})-[:BELONGS_TO]->(env)
+                CREATE (e:$($envEntityType):$($appEntityType):$($entityType) {id: $entityId, name: $name})-[:BELONGS_TO_ENVIRONMENT]->(env)
+                CREATE (e)-[:PARENT]->(env)
                 CREATE (e)-[:BELONGS_TO_TENANT]->(t)")
                                      .WithParameters(new
                                      {
@@ -217,8 +218,11 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
                                      .ExecuteAsync()
             : await driver.ExecutableQuery(@"
                 MATCH (t:Tenant {id: $tenantId})
-                MATCH (t)<-[:BELONGS_TO_TENANT]-(env:Environment)<-[:BELONGS_TO]-(parent:$($parentEntityType)) WHERE env.id = $envId AND parent.id = $parentId
-                CREATE (e:$($envEntityType):$($appEntityType):$($entityType) {id: $entityId, name: $name}), (e)-[:BELONGS_TO]->(env), (e)-[:PARENT]->(parent), (e)-[:BELONGS_TO_TENANT]->(t)")
+                MATCH (t)<-[:BELONGS_TO_TENANT]-(env:Environment WHERE env.id = $envId)<-[:BELONGS_TO_ENVIRONMENT]-(parent:$($parentEntityType) WHERE parent.id = $parentId)
+                CREATE (e:$($envEntityType):$($appEntityType):$($entityType) {id: $entityId, name: $name})
+                CREATE (e)-[:BELONGS_TO_ENVIRONMENT]->(env)
+                CREATE (e)-[:PARENT]->(parent)
+                CREATE (e)-[:BELONGS_TO_TENANT]->(t)")
                                  .WithParameters(new
                                  {
                                      tenantId = tenantId.ToString(),
@@ -281,13 +285,13 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
                 MATCH (t:Tenant {id: $tenantId})
                 MATCH (srcEnv:Environment)-[:BELONGS_TO_TENANT]->(t) WHERE srcEnv.id=$srcEnvId
                 MATCH (tgtEnv:Environment)-[:BELONGS_TO_TENANT]->(t) WHERE tgtEnv.id=$tgtEnvId
-                MATCH (srcEnv)<-[:BELONGS_TO]-(srcParent:$($srcParentEntityType))-[:BELONGS_TO_TENANT]->(t) WHERE srcParent.id = $srcParentId
-                MATCH (tgtEnv)<-[:BELONGS_TO]-(tgtParent:$($tgtParentEntityType))-[:BELONGS_TO_TENANT]->(t) WHERE tgtParent.id = $tgtParentId
+                MATCH (srcEnv)<-[:BELONGS_TO_ENVIRONMENT]-(srcParent:$($srcParentEntityType))-[:BELONGS_TO_TENANT]->(t) WHERE srcParent.id = $srcParentId
+                MATCH (tgtEnv)<-[:BELONGS_TO_ENVIRONMENT]-(tgtParent:$($tgtParentEntityType))-[:BELONGS_TO_TENANT]->(t) WHERE tgtParent.id = $tgtParentId
                 CREATE (src:$($srcEnvEntityType):$($srcAppEntityType):$($srcEntityType) {id:$srcId, name:$srcName})-[:MAPS_TO {created: $created}]->(tgt:$($tgtEnvEntityType):$($tgtAppEntityType):$($tgtEntityType) {id:$tgtId, name:$tgtName})
                 CREATE (src)-[:BELONGS_TO_TENANT]->(t)
                 CREATE (tgt)-[:BELONGS_TO_TENANT]->(t)
-                CREATE (src)-[:BELONGS_TO]->(srcEnv)
-                CREATE (tgt)-[:BELONGS_TO]->(tgtEnv)
+                CREATE (src)-[:BELONGS_TO_ENVIRONMENT]->(srcEnv)
+                CREATE (tgt)-[:BELONGS_TO_ENVIRONMENT]->(tgtEnv)
                 CREATE (src)-[:PARENT]->(srcParent)
                 CREATE (tgt)-[:PARENT]->(tgtParent)")
                                         .WithParameters(new
@@ -327,8 +331,10 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
                 MATCH (srcEnv:Environment) WHERE srcEnv.Id=$srcEnvId
                 MATCH (tgtEnv:Environment) WHERE tgtEnv.Id=$tgtEnvId
                 CREATE (src:$($srcEnvEntityType):$($srcAppEntityType):$($srcEntityType) {id:$srcId, name:$srcName})-[:MAPS_TO]->(tgt:$($tgtEnvEntityType):$($tgtAppEntityType):$($tgtEntityType) {id:$tgtId, name:$tgtName})
-                CREATE (src)-[:BELONGS_TO]->(srcEnv)
-                CREATE (tgt)-[:BELONGS_TO]->(tgtEnv)")
+                CREATE (src)-[:PARENT]->(srcEnv)
+                CREATE (tgt)-[:PARENT]->(tgtEnv)
+                CREATE (src)-[:BELONGS_TO_ENVIRONMENT]->(srcEnv)
+                CREATE (tgt)-[:BELONGS_TO_ENVIRONMENT]->(tgtEnv)")
                                         .WithParameters(new
                                         {
                                             srcEnvId = mappedEntities.SourceEnvironmentId.ToString(),
@@ -385,7 +391,7 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
     }
 
 
-    public async Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityId, Dictionary<string, string> settings)
+    public async Task CreateEnvironmentSettings(Guid tenantId, Guid environmentId, Dictionary<string, string> settings)
     {
         await using var driver = GetDriver();
         var applicationType = await GetApplicationType(driver, environmentId);
@@ -393,13 +399,13 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         var result = await driver.ExecutableQuery(@"
             MATCH (t:Tenant {id: $tenantId})
             MATCH (env:Environment {id: $envId})-[:BELONGS_TO_TENANT]->(t)
-            MATCH (e)-[:BELONGS_TO]->(env) WHERE e.id=$entityId
-            MERGE (s:Settings $settings)-[:FOR_ENTITY]->(e)")
+            MERGE (s:Settings)-[:SETTINGS_FOR]->(env)
+                ON CREATE SET s = $settings
+                ON MATCH SET s += $settings")
                                  .WithParameters(new
                                  {
                                      tenantId = tenantId.ToString(),
                                      envId = environmentId.ToString(),
-                                     entityId = entityId,
                                      settings = settings
                                  })
                                  .WithConfig(new QueryConfig(database: "neo4j"))
@@ -410,6 +416,78 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         _logger.LogInformation("Updated {PropertiesSet} properties in {Milliseconds} ms.", summary.Counters.PropertiesSet, summary.ResultAvailableAfter.Milliseconds);
     }
 
+    public async Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityType, string entityId, Dictionary<string, string> settings)
+    {
+        await using var driver = GetDriver();
+        var applicationType = await GetApplicationType(driver, environmentId);
+
+        var result = await driver.ExecutableQuery(@"
+            MATCH (t:Tenant {id: $tenantId})
+            MATCH (env:Environment {id: $envId})-[:BELONGS_TO_TENANT]->(t)
+            MATCH (e:$($entityType))-[:BELONGS_TO_ENVIRONMENT]->(env) WHERE e.id=$entityId
+            MERGE (s:Settings)-[:SETTINGS_FOR]->(e)
+                ON CREATE SET s = $settings
+                ON MATCH SET s += $settings")
+                                 .WithParameters(new
+                                 {
+                                     tenantId = tenantId.ToString(),
+                                     envId = environmentId.ToString(),
+                                     entityId = entityId,
+                                     entityType = entityType.ToPascalCase(),
+                                     settings = settings
+                                 })
+                                 .WithConfig(new QueryConfig(database: "neo4j"))
+                                 .ExecuteAsync();
+
+        var summary = result.Summary;
+
+        _logger.LogInformation("Updated {PropertiesSet} properties in {Milliseconds} ms.", summary.Counters.PropertiesSet, summary.ResultAvailableAfter.Milliseconds);
+    }
+
+    public async Task<string> GetEntitySetting(Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName)
+    {
+        await using var driver = GetDriver();
+
+        var result = await driver.ExecutableQuery(@"
+            MATCH (t:Tenant {id: $tenantId})
+            MATCH (env:Environment {id: $envId})-[:BELONGS_TO_TENANT]->(t)
+            MATCH (e:$($entityType))-[:BELONGS_TO_ENVIRONMENT]->(env) WHERE e.id=$entityId
+            MATCH p = SHORTEST 1 (e)-[:PARENT|SETTINGS_FOR]-+(s:Settings WHERE s[$settingName] IS NOT NULL)
+            RETURN length(p) as length, s[$settingName] AS " + settingName)
+                                .WithParameters(new
+                                {
+                                    tenantId = tenantId.ToString(),
+                                    envId = environmentId.ToString(),
+                                    entityId = entityId,
+                                    entityType = entityType.ToPascalCase(),
+                                    settingName = settingName
+                                })
+                                .WithConfig(new QueryConfig(database: "neo4j"))
+                                .ExecuteAsync();
+
+        var summary = result.Summary;
+
+        var shortestPath = 0L;
+
+        var settingValue = string.Empty;
+
+        foreach (var record in result.Result)
+        {
+            var length = (long)record["length"];
+
+            if (shortestPath == 0 || length < shortestPath)
+            {
+                shortestPath = length;
+
+                settingValue = (string)record[settingName];
+            }
+        }
+
+        // _logger.LogInformation("Retrieved records in {Milliseconds} ms.", summary.Counters., summary.ResultAvailableAfter.Milliseconds);
+
+        return settingValue;
+    }
+
     private async Task<string> GetApplicationType(IDriver driver, Guid environmentId)
     {
         if (_environmentApplicationTypes.TryGetValue(environmentId, out var applicationType))
@@ -418,8 +496,8 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         }
 
         var result = await driver.ExecutableQuery(@"
-                MATCH (e:Environment)-[r:INSTANCE_OF]->(a:Application) WHERE e.id=$envId
-                Return a.type")
+                MATCH (e:Environment)-[r:INSTANCE_OF_APPLICATION]->(a:Application) WHERE e.id=$envId
+                RETURN a.type")
                                 .WithParameters(new { envId = environmentId.ToString() })
                                 .WithConfig(new QueryConfig(database: "neo4j"))
                                 .ExecuteAsync();

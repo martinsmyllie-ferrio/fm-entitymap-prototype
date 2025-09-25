@@ -82,4 +82,17 @@ public class ApplicationController(IApplicationService applicationService, IEnvi
         await _environmentService.CreateEnvironmentCapabilityMap(envId, request.TargetEnvironmentId, request.PublishCapabilities);
         return CreatedAtAction(nameof(MapEnvironmentCapabilities), null);
     }
+
+    [HttpPost("environments/{environmentId:guid}/settings")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> CreateEnvironmentSettings([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, [FromBody] CreateSettingsRequest[] request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid environment data.");
+        }
+
+        await _environmentService.CreateEnvironmentSettings(tenantId, environmentId, request.ToModel());
+        return CreatedAtAction(nameof(CreateEnvironmentSettings), null);
+    }
 }

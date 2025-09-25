@@ -22,5 +22,9 @@ public interface IEntityMapStorage
 
     Task CreateEntityPairWithMap(Guid tenantId, MappedEntities mappedEntities);
 
-    Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityId, Dictionary<string, string> settings);
+    Task CreateEnvironmentSettings(Guid tenantId, Guid environmentId, Dictionary<string, string> settings);
+
+    Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityType, string entityId, Dictionary<string, string> settings);
+
+    Task<string> GetEntitySetting(Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName);
 }

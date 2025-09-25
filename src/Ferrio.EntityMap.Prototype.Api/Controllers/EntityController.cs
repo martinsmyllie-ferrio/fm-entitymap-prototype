@@ -30,16 +30,16 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
         return CreatedAtAction(nameof(CreateEntity), entity);
     }
 
-    [HttpPost("environments/{environmentId:guid}/entities/{entityId}/settings")]
+    [HttpPost("environments/{environmentId:guid}/entities/{entityType}/{entityId}/settings")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateEntitySettings([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityId, [FromBody] CreateSettingsRequest[] request)
+    public async Task<IActionResult> CreateEntitySettings([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, [FromBody] CreateSettingsRequest[] request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        await _entityService.CreateEntitySettings(tenantId, environmentId, entityId, request.ToModel());
+        await _entityService.CreateEntitySettings(tenantId, environmentId, entityType, entityId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntitySettings), null);
     }
 
@@ -67,6 +67,18 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
 
         var entities = await _entityService.CreateEntityPair(tenantId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntityPair), entities);
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/settings/{settingName}")]
+    public async Task<IActionResult> GetSetting([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName)
+    {
+        var setting = await _entityService.GetEntitySetting(tenantId, environmentId, entityType, entityId, settingName);
+        if (setting == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(setting);
     }
 }
 
