@@ -193,6 +193,19 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
     public async Task CreateEntity(Guid tenantId, Guid environmentId, Entity entity)
     {
         await using var driver = GetDriver();
+
+        // Validate entity type exists in domain for environment
+        var parentEntityType = await ValidateEntityType(driver, environmentId, entity.EntityType);
+
+        if (entity.Parent is not null && entity.Parent.EntityType != parentEntityType)
+        {
+            throw new Exception($"Entity type '{entity.EntityType}' must have parent entity type '{parentEntityType}' as defined in the domain for environment '{environmentId}'.");
+        }
+        else if (entity.Parent is null && parentEntityType is not null)
+        {
+            throw new Exception($"Entity type '{entity.EntityType}' must have a parent entity of type '{parentEntityType}' as defined in the domain for environment '{environmentId}'.");
+        }
+
         var applicationType = await GetApplicationType(driver, environmentId);
 
         var (appEntityTypeLabel, envEntityTypeLabel) = GetNodeLabels(applicationType, environmentId, entity.EntityType);
@@ -530,6 +543,44 @@ public class EntityMapGraph(ILogger<EntityMapGraph> logger) : IEntityMapStorage
         var envEntityTypeLabel = GetEnvironmentEntityTypeLabel(environmentId, entityType);
 
         return new Tuple<string, string>(appEntityTypeLabel, envEntityTypeLabel);
+    }
+
+    private async Task<string> ValidateEntityType(IDriver driver, Guid environmentId, string entityType)
+    {
+        var result = await driver.ExecutableQuery(@"
+                MATCH p = SHORTEST 1 (e:Environment WHERE e.id = $envId)-[]-+(ed:EntityDefinition WHERE ed.entityType = $entityType) RETURN length(p) AS length, ed.parentEntityType AS parentEntityType")
+                                .WithParameters(new
+                                {
+                                    envId = environmentId.ToString(),
+                                    entityType = entityType
+                                })
+                                .WithConfig(new QueryConfig(database: "neo4j"))
+                                .ExecuteAsync();
+
+        var summary = result.Summary;
+
+        if (result.Result.Count == 0)
+        {
+            throw new Exception($"Entity type '{entityType}' is not defined in the domain for environment '{environmentId}'.");
+        }
+
+        var shortestPath = 0L;
+
+        string parentEntityType = null;
+
+        foreach (var record in result.Result)
+        {
+            var length = (long)record["length"];
+
+            if (shortestPath == 0 || length < shortestPath)
+            {
+                shortestPath = length;
+
+                parentEntityType = (string)record["parentEntityType"];
+            }
+        }
+
+        return parentEntityType;
     }
 }
 

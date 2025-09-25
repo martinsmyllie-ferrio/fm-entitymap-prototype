@@ -275,3 +275,16 @@ X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
 ### Get Setting "bob" for ACME BigChange Job BC-1 (should return 90 from Site)
 GET http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities/job/BC-1/settings/bob
 X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+
+### Attempt to add Invalid ACME BigChange Banana entity
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "job",
+  "name": "Job 1",
+  "id": "BC-1",
+  "parentId": "BC-1"
+}
