@@ -88,5 +88,29 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
 
         return Ok(entities);
     }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/parent")]
+    public Task<IActionResult> GetParent([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/ancestor/{ancestorEntityType}")]
+    public Task<IActionResult> GetAncestor([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, string ancestorEntityType)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/children")]
+    public Task<IActionResult> GetChildren([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/descendants/{descendantEntityType}")]
+    public Task<IActionResult> GetDescendants([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, string descendantEntityType)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
 }
 
