@@ -17,43 +17,100 @@ public class EntityController(IEntityService entityService, ILogger<EntityContro
         return Ok(new { status = "Healthy" });
     }
 
-    [HttpPost("environments/{envId}/entities")]
+    [HttpPost("environments/{environmentId:guid}/entities")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateEntity(Guid envId, [FromBody] CreateEntityRequest request)
+    public async Task<IActionResult> CreateEntity([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, [FromBody] CreateEntityRequest request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        var entity = await _entityService.CreateEntity(envId, request.ToModel());
+        var entity = await _entityService.CreateEntity(tenantId, environmentId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntity), entity);
     }
 
-    [HttpPost("entitymaps")]
+    [HttpPost("environments/{environmentId:guid}/entities/{entityType}/{entityId}/settings")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> MapExistingEntities([FromBody] CreateEntityMapRequest request)
+    public async Task<IActionResult> CreateEntitySettings([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, [FromBody] CreateSettingsRequest[] request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        await _entityService.CreateEntityMap(request.ToModel());
+        await _entityService.CreateEntitySettings(tenantId, environmentId, entityType, entityId, request.ToModel());
+        return CreatedAtAction(nameof(CreateEntitySettings), null);
+    }
+
+    [HttpPost("mappings")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async Task<IActionResult> MapExistingEntities([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, [FromBody] CreateEntityMapRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest("Invalid request.");
+        }
+
+        await _entityService.CreateEntityMap(tenantId, request.ToModel());
         return CreatedAtAction(nameof(MapExistingEntities), null);
     }
 
-    [HttpPost("entitymaps/pairs")]
+    [HttpPost("mappings/pairs")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<IActionResult> CreateEntityPair([FromBody] CreateMappedEntityPairRequest request)
+    public async Task<IActionResult> CreateEntityPair([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, [FromBody] CreateMappedEntityPairRequest request)
     {
         if (request == null)
         {
             return BadRequest("Invalid request.");
         }
 
-        var entities = await _entityService.CreateEntityPair(request.ToModel());
+        var entities = await _entityService.CreateEntityPair(tenantId, request.ToModel());
         return CreatedAtAction(nameof(CreateEntityPair), entities);
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/settings/{settingName}")]
+    public async Task<IActionResult> GetSetting([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName)
+    {
+        var setting = await _entityService.GetEntitySetting(tenantId, environmentId, entityType, entityId, settingName);
+        if (setting == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(setting);
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/mappings")]
+    public async Task<IActionResult> GetMappedEntities([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        var entities = await _entityService.GetMappedEntities(tenantId, environmentId, entityType, entityId);
+
+        return Ok(entities);
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/parent")]
+    public Task<IActionResult> GetParent([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/ancestor/{ancestorEntityType}")]
+    public Task<IActionResult> GetAncestor([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, string ancestorEntityType)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/children")]
+    public Task<IActionResult> GetChildren([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        throw new NotImplementedException("Not implemented yet");
+    }
+
+    [HttpGet("environments/{environmentId:guid}/entities/{entityType}/{entityId}/descendants/{descendantEntityType}")]
+    public Task<IActionResult> GetDescendants([FromHeader(Name = "X-Tenant-ID")] Guid tenantId, Guid environmentId, string entityType, string entityId, string descendantEntityType)
+    {
+        throw new NotImplementedException("Not implemented yet");
     }
 }
 

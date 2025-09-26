@@ -9,32 +9,23 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
     private readonly IEntityMapStorage _storage = storage;
     private readonly ILogger<EntityService> _logger = logger;
 
-    public async Task<Entity> CreateEntity(Guid environmentId, CreateEntity entity)
+    public async Task<Entity> CreateEntity(Guid tenantId, Guid environmentId, Entity entity)
     {
         _logger.LogInformation("Creating {EntityType} entity {EntityName} for environment {EnvironmentId}", entity.EntityType, entity.Name, environmentId);
 
-        var ent = new Entity
-        {
-            Id = Guid.NewGuid(),
-            ReferenceId = entity.ReferenceId,
-            ParentReferenceId = entity.ParentReferenceId,
-            Name = entity.Name,
-            EntityType = entity.EntityType
-        };
+        await _storage.CreateEntity(tenantId, environmentId, entity);
 
-        await _storage.CreateEntity(environmentId, ent);
-
-        return ent;
+        return entity;
     }
 
-    public Task CreateEntityMap(CreateEntityMap entityMap)
+    public Task CreateEntityMap(Guid tenantId, CreateEntityMap entityMap)
     {
         _logger.LogInformation("Creating entity map");
 
-        return _storage.CreateEntityMap(entityMap);
+        return _storage.CreateEntityMap(tenantId, entityMap);
     }
 
-    public async Task<MappedEntities> CreateEntityPair(CreateMappedEntities createMappedEntities)
+    public async Task<MappedEntities> CreateEntityPair(Guid tenantId, CreateMappedEntities createMappedEntities)
     {
         _logger.LogInformation("Creating entity pair with mapping");
 
@@ -44,24 +35,43 @@ public class EntityService(IEntityMapStorage storage, ILogger<EntityService> log
             TargetEnvironmentId = createMappedEntities.TargetEnvironmentId,
             SourceEntity = new()
             {
-                Id = Guid.NewGuid(),
                 Name = createMappedEntities.SourceEntity.Name,
-                ReferenceId = createMappedEntities.SourceEntity.ReferenceId,
-                ParentReferenceId = createMappedEntities.SourceEntity.ParentReferenceId,
+                Id = createMappedEntities.SourceEntity.Id,
+                Parent = createMappedEntities.SourceEntity.Parent,
                 EntityType = createMappedEntities.SourceEntity.EntityType
             },
             TargetEntity = new()
             {
-                Id = Guid.NewGuid(),
                 Name = createMappedEntities.TargetEntity.Name,
-                ReferenceId = createMappedEntities.TargetEntity.ReferenceId,
-                ParentReferenceId = createMappedEntities.TargetEntity.ParentReferenceId,
+                Id = createMappedEntities.TargetEntity.Id,
+                Parent = createMappedEntities.TargetEntity.Parent,
                 EntityType = createMappedEntities.TargetEntity.EntityType
             }
         };
 
-        await _storage.CreateEntityPairWithMap(mappedEntities);
+        await _storage.CreateEntityPairWithMap(tenantId, mappedEntities);
 
         return mappedEntities;
+    }
+
+    public Task CreateEntitySettings(Guid tenantId, Guid environmentId, string entityType, string entityId, Dictionary<string, string> settings)
+    {
+        _logger.LogInformation("Creating entity settings for entity {EntityId} of type {EntityType} in environment {EnvironmentId}", entityId, entityType, environmentId);
+
+        return _storage.CreateEntitySettings(tenantId, environmentId, entityType, entityId, settings);
+    }
+
+    public Task<string> GetEntitySetting(Guid tenantId, Guid environmentId, string entityType, string entityId, string settingName)
+    {
+        _logger.LogInformation("Retrieving entity setting {SettingName} for entity {EntityId} of type {EntityType} in environment {EnvironmentId}", settingName, entityId, entityType, environmentId);
+
+        return _storage.GetEntitySetting(tenantId, environmentId, entityType, entityId, settingName);
+    }
+
+    public Task<Entity[]> GetMappedEntities(Guid tenantId, Guid environmentId, string entityType, string entityId)
+    {
+        _logger.LogInformation("Retrieving mapped entities for entity {EntityId} of type {EntityType} in environment {EnvironmentId}", entityId, entityType, environmentId);
+
+        return _storage.GetMappedEntities(tenantId, environmentId, entityType, entityId);
     }
 }

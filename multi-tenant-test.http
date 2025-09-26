@@ -1,0 +1,294 @@
+### Create Global Tenant
+POST http://localhost:5183/api/Application/tenants
+Content-Type: application/json
+
+{
+    "tenantId": "7efa991b-3429-4340-9244-e63fb8362e7a",
+    "name": "Global Tenant"
+}
+
+### Create Domain
+POST http://localhost:5183/api/Application/domains
+Content-Type: application/json
+X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
+
+{
+    "name": "Ferrio FM",
+    "entityDefinitions": [
+    {
+      "name": "Customer Definition",
+      "entityType": "customer"
+    },
+    {
+      "name": "Site Definition",
+      "entityType": "site",
+      "parentEntityType": "customer"
+    },
+    {
+      "name": "Job Definition",
+      "entityType": "job",
+      "parentEntityType": "site"
+    }
+  ]
+}
+
+### Create Simpro Application in Ferrio FM Domain
+POST http://localhost:5183/api/application/domains/cf1feebb-5f7d-44d4-a07d-255dc1d955bc/apps
+Content-Type: application/json
+X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
+
+{
+    "name": "SIMPRO JOB SCHEDULING",
+    "applicationType": "simpro"
+}
+
+### Create Big Change Application in Ferrio FM Domain
+POST http://localhost:5183/api/application/domains/cf1feebb-5f7d-44d4-a07d-255dc1d955bc/apps
+Content-Type: application/json
+X-Tenant-ID: 7efa991b-3429-4340-9244-e63fb8362e7a
+
+{
+    "name": "BIG CHANGE",
+    "applicationType": "BigChange"
+}
+
+
+### Create ACME Tenant
+POST http://localhost:5183/api/Application/tenants
+Content-Type: application/json
+
+{
+    "tenantId": "c41d3cc6-8369-4c62-8d7e-ee44670f8ed4",
+    "name": "ACME Tenant"
+}
+
+### Create ACME Environment for Simpro
+POST http://localhost:5183/api/application/apps/c4d030fd-9673-4760-86ae-77c95cd34bcc/environments
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "name": "acme.simprosuite.com"
+}
+
+### Create ACME Environment for BigChange
+POST http://localhost:5183/api/application/apps/1e1d92e5-b2ba-4dd9-bf67-f5891e3410df/environments
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "name": "acme.bigchange.com"
+}
+
+### Create ACME Simpro Customer entity
+POST http://localhost:5183/api/entity/environments/deb99aef-c228-41b5-a58e-3cb8935972a6/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "customer",
+  "name": "Aldi",
+  "id": "SIM-CUST-001"
+}
+
+### Create ACME BigChange Customer entity
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "customer",
+  "name": "ALDI",
+  "id": "BC-1"
+}
+
+### Create ACME Simpro Site entity
+POST http://localhost:5183/api/entity/environments/deb99aef-c228-41b5-a58e-3cb8935972a6/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "site",
+  "name": "Archer Road Store",
+  "id": "SIM-SITE-001",
+  "parentId": "SIM-CUST-001",
+  "parentEntityType": "customer"
+}
+
+### Create ACME BigChange Site entity
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "site",
+  "name": "Archer Rd",
+  "id": "BC-1",
+  "parentId": "BC-1",
+  "parentEntityType": "customer"
+}
+
+### Create ACME BigChange Site entity
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "site",
+  "name": "St. Mary's Gate",
+  "id": "BC-2",
+  "parentId": "BC-1",
+  "parentEntityType": "customer"
+}
+
+
+### Create ACME Simpro Job entity
+POST http://localhost:5183/api/entity/environments/deb99aef-c228-41b5-a58e-3cb8935972a6/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "job",
+  "name": "Job 1",
+  "id": "SIM-JOB-001",
+  "parentId": "SIM-SITE-001"
+}
+
+### Create ACME BigChange Job entity
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "job",
+  "name": "Job 1",
+  "id": "BC-1",
+  "parentId": "BC-1",
+  "parentEntityType": "site"
+}
+
+### Create Mapping between ACME Simpro Customer and ACME BigChange Customer
+POST http://localhost:5183/api/entity/mappings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "source": {
+    "environmentId": "deb99aef-c228-41b5-a58e-3cb8935972a6",
+    "id": "SIM-CUST-001",
+    "entityType": "customer"
+  },
+  "target": {
+    "environmentId": "042e6232-2a97-4fb3-8381-3ca7db73cf09",
+    "id": "BC-1",
+    "entityType": "customer"
+  }
+}
+
+### Create Mapping between ACME Simpro Site and ACME BigChange Site
+POST http://localhost:5183/api/entity/mappings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "source": {
+    "environmentId": "deb99aef-c228-41b5-a58e-3cb8935972a6",
+    "id": "SIM-SITE-001",
+    "entityType": "site"
+  },
+  "target": {
+    "environmentId": "042e6232-2a97-4fb3-8381-3ca7db73cf09",
+    "id": "BC-1",
+    "entityType": "site"
+  }
+}
+
+### Create Mapping between new ACME Simpro Job and new ACME BigChange Job
+POST http://localhost:5183/api/entity/mappings/pairs
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "sourceEnvironmentId": "deb99aef-c228-41b5-a58e-3cb8935972a6",
+  "targetEnvironmentId": "042e6232-2a97-4fb3-8381-3ca7db73cf09",
+  "source": {
+    "id": "SIM-JOB-004",
+    "name": "Job 4",
+    "entityType": "job",
+    "parentId": "SIM-SITE-001",
+    "parentEntityType": "site"
+  },
+  "target": {
+    
+    "id": "BC-4",
+    "name": "Job 4",
+    "entityType": "job",
+    "parentId": "BC-1",
+    "parentEntityType": "site"
+  }
+}
+
+### Create BigChange Customer Settings
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities/customer/BC-1/settings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+[
+  {
+    "settingName": "bob",
+    "settingValue": "1000"
+  },
+  {
+    "settingName": "bill",
+    "settingValue": "something interesting"
+  }
+]
+
+### Create BigChange Site Settings
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities/site/BC-1/settings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+[
+  {
+    "settingName": "bob",
+    "settingValue": "90"
+  },
+  {
+    "settingName": "ben",
+    "settingValue": "hello"
+  }
+]
+
+### Create BigChange Environment Settings
+POST http://localhost:5183/api/application/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/settings
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+[
+  {
+    "settingName": "bob",
+    "settingValue": "2000"
+  }
+]
+
+### Get Setting "bob" for ACME BigChange Job BC-1 (should return 90 from Site)
+GET http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities/job/BC-1/settings/bob
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+
+### Attempt to add Invalid ACME BigChange Banana entity
+POST http://localhost:5183/api/entity/environments/042e6232-2a97-4fb3-8381-3ca7db73cf09/entities
+Content-Type: application/json
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4
+
+{
+  "entityType": "job",
+  "name": "Job 1",
+  "id": "BC-1",
+  "parentId": "BC-1"
+}
+
+### Get Mapped Entities for ACME Simpro Job
+GET http://localhost:5183/api/entity/environments/deb99aef-c228-41b5-a58e-3cb8935972a6/entities/job/SIM-JOB-004/mappings
+X-Tenant-ID: c41d3cc6-8369-4c62-8d7e-ee44670f8ed4   

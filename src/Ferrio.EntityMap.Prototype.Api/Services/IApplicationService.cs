@@ -5,5 +5,9 @@ namespace Ferrio.EntityMap.Prototype.Api.Services;
 
 public interface IApplicationService
 {
-    Task<Application> CreateApplication(CreateApplication application);
+    Task<Tenant> CreateTenant(Tenant tenant);
+
+    Task<Domain> CreateDomain(Guid tenantId, CreateDomain domain);
+
+    Task<Application> CreateApplication(Guid tenantId, Guid domainId, CreateApplication application);
 }

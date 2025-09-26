@@ -8,11 +8,11 @@ public class CreateEntityMap
 
     public required string SourceType { get; set; }
 
-    public required string SourceReferenceId { get; set; }
+    public required string SourceEntityId { get; set; }
 
     public Guid TargetEnvironmentId { get; set; }
 
     public required string TargetType { get; set; }
 
-    public required string TargetReferenceId { get; set; }
+    public required string TargetEntityId { get; set; }
 }
